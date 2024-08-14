@@ -2,7 +2,7 @@
 
 pub struct Settings {
     pub fileDataBase: String,
-    pub template: String
+    pub template: String,
 }
 
 impl Settings {
@@ -10,10 +10,12 @@ impl Settings {
         Settings {
             fileDataBase: String::from("todo.json"),
             template: String::from(
-r#"{
-  properties: {},
-  items: []
-}"#
+                r#"{
+  "properties": {
+    "ownerName": "Unnamed"
+  },
+  "items": []
+}"#,
             ),
         }
     }
