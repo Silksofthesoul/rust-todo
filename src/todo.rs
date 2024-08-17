@@ -1,5 +1,8 @@
 #![allow(non_snake_case)]
 
+mod fileWorker;
+mod settings;
+
 // use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json;
@@ -8,17 +11,28 @@ use serde_json::Value;
 // use std::collections::HashMap;
 use std::vec::Vec;
 
+use fileWorker::FileWorker;
+use settings::Settings;
+
 fn parse(data: String) -> Result<TodoJSON> {
     let parsed: TodoJSON = serde_json::from_str(data.as_str())?;
     Ok(parsed)
 }
+
+static settings: Settings = Settings::new();
+static fw: FileWorker = FileWorker::new();
+
+
+static fileNameDB: String = settings.get(String::from("fileNameDB")).unwrap().to_string();
+static tmplEmpty: String  = settings.template(String::from("emptyDB")).unwrap().to_string();
+
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Properties {
     ownerName: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 struct TodoItem {
     status: bool,
     title: String,
@@ -32,18 +46,24 @@ struct TodoJSON {
     items: Vec<TodoItem>,
 }
 
+#[derive(Serialize)]
 pub struct Todo {
     properties: Properties,
     items: Vec<TodoItem>,
 }
 
+
 impl Todo {
-    pub fn new(data: String) -> Todo {
+    pub fn new() -> Todo {
+
+        let content = fw.fileToString(fileNameDB.clone(), tmplEmpty.clone()).unwrap();
+
         Todo {
-            properties: Self::initProperties(data.clone()),
-            items: Self::initItems(data.clone()),
+            properties: Self::initProperties(content.clone()),
+            items: Self::initItems(content.clone()),
         }
     }
+
 
     fn initProperties(data: String) -> Properties {
         let parsed: Result<TodoJSON> = parse(data);
@@ -97,5 +117,12 @@ impl Todo {
             );
         }
         self
+    }
+    pub fn sync(self) -> Self {
+       let json_string = serde_json::to_string(&self).unwrap();
+       println!("{}", json_string);
+       let fileNameDB: String = settings.get(String::from("fileNameDB")).unwrap().to_string();
+       fw.write(fileNameDB, json_string);
+       self
     }
 }

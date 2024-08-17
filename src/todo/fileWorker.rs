@@ -4,29 +4,30 @@ use std::fs;
 use std::io::{self, Write};
 use std::error::Error;
 
-pub struct FileReader {
-    path: String,
-    template: String,
+pub struct FileWorker {
     errorFile: String,
     errorFile404: String,
     msgCreateNewFile: String,
 }
 
-impl FileReader {
-    pub fn new(path: &str, template: &str) -> FileReader {
-        FileReader {
-            path: String::from(path),
-            template: String::from(template),
-            errorFile: String::from("Ошибка, чтения файла."),
-            errorFile404: String::from("Файл не найден"),
-            msgCreateNewFile: String::from("Создаем новый файл"),
+impl FileWorker {
+    pub fn new() -> FileWorker {
+
+        let errorFile = String::from("Ошибка, чтения файла.");
+        let errorFile404 = String::from("Файл не найден");
+        let msgCreateNewFile = String::from("Создаем новый файл");
+
+        FileWorker {
+            errorFile,
+            errorFile404,
+            msgCreateNewFile
         }
     }
 
-    pub fn read(&self) -> Result<String, Box<dyn Error>> {
+    pub fn fileToString(&self, path: String, template: String) -> Result<String, Box<dyn Error>> {
         let mut value: String = String::from("");
-        let path = self.path.as_str();
-        let template = self.template.as_str();
+        let path = path.as_str();
+        let template = template.as_str();
 
         let commonError = self.errorFile.as_str();
         let notFoundError = self.errorFile404.as_str();
