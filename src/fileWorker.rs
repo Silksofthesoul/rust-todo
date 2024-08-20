@@ -1,24 +1,17 @@
 #![allow(non_snake_case)]
 
-use std::fs;
-use std::fs::File;
-use std::io::{self, Write};
 use std::error::Error;
+use std::fs;
+use std::io::{self, Write};
 
 pub struct FileWorker {
     errorFile: String,
     errorFile404: String,
     msgCreateNewFile: String,
 }
-trait FileWorker {
-    pub fn fileToString(&self, path: String, template: String) -> Result<String, Box<dyn Error>>;
-    pub fn write(&self, path: String, content: String) -> Result<()>;
-
-}
 
 impl FileWorker {
     pub fn new() -> FileWorker {
-
         let errorFile = String::from("Ошибка, чтения файла.");
         let errorFile404 = String::from("Файл не найден");
         let msgCreateNewFile = String::from("Создаем новый файл");
@@ -26,7 +19,7 @@ impl FileWorker {
         FileWorker {
             errorFile,
             errorFile404,
-            msgCreateNewFile
+            msgCreateNewFile,
         }
     }
 
@@ -47,7 +40,7 @@ impl FileWorker {
                 if err.kind() == io::ErrorKind::NotFound {
                     println!("{}", commonError);
                     println!("{}", notFoundError);
-                    println!("{}",createMsg);
+                    println!("{}", createMsg);
                     let mut file = fs::File::create(path)?;
                     value = String::from(template);
                     file.write_all(value.as_bytes())?;
@@ -57,11 +50,9 @@ impl FileWorker {
         Ok(value)
     }
 
-    pub fn write(&self, path: String, content: String) -> Result<()> {
-        let path = path.as_str();
-        let mut file = File::create(path)?;
-        file.write_all(contend)?;
+    pub fn write(&self, filename: String, data: String) -> Result<(), io::Error> {
+        let mut file = fs::File::create(filename)?;
+        file.write_all(data.as_bytes())?;
         Ok(())
     }
 }
-

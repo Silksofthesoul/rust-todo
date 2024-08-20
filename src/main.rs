@@ -1,22 +1,17 @@
 #![allow(non_snake_case)]
 
+mod fileWorker;
+mod scanner;
+mod settings;
 mod todo;
+mod library {
+    pub mod json;
+    pub mod print;
+}
+
 use todo::Todo;
 
 fn main() {
-    line();
-
-    let todo = Todo::new();
-    todo
-        .show()
-        .addTask("Помыть посуду")
-        .addTask("Вынести мусор")
-        .done(0)
-        .show()
-        .sync();
-    line();
-}
-
-fn line() {
-    println!("[==================]")
+    let mut todo = Todo::new();
+    todo.run();
 }

@@ -1,7 +1,10 @@
 #![allow(non_snake_case)]
 
-mod fileWorker;
-mod settings;
+use crate::fileWorker::FileWorker;
+use crate::library::json::{parse, stringify};
+use crate::library::print::line;
+use crate::scanner::Scanner;
+use crate::settings::Settings;
 
 // use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -9,23 +12,7 @@ use serde_json;
 use serde_json::Result;
 use serde_json::Value;
 // use std::collections::HashMap;
-use std::vec::Vec;
-
-use fileWorker::FileWorker;
-use settings::Settings;
-
-fn parse(data: String) -> Result<TodoJSON> {
-    let parsed: TodoJSON = serde_json::from_str(data.as_str())?;
-    Ok(parsed)
-}
-
-static settings: Settings = Settings::new();
-static fw: FileWorker = FileWorker::new();
-
-
-static fileNameDB: String = settings.get(String::from("fileNameDB")).unwrap().to_string();
-static tmplEmpty: String  = settings.template(String::from("emptyDB")).unwrap().to_string();
-
+// use std::vec::Vec;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Properties {
@@ -33,7 +20,7 @@ struct Properties {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct TodoItem {
+pub struct TodoItem {
     status: bool,
     title: String,
     created: String,
@@ -41,7 +28,7 @@ struct TodoItem {
 }
 
 #[derive(Deserialize, Debug)]
-struct TodoJSON {
+pub struct TodoJSON {
     properties: Properties,
     items: Vec<TodoItem>,
 }
@@ -50,20 +37,40 @@ struct TodoJSON {
 pub struct Todo {
     properties: Properties,
     items: Vec<TodoItem>,
+    #[serde(skip_serializing, skip_deserializing)]
+    fileWorker: FileWorker,
+    #[serde(skip_serializing, skip_deserializing)]
+    settings: Settings,
+    #[serde(skip_serializing, skip_deserializing)]
+    scanner: Scanner,
 }
-
 
 impl Todo {
     pub fn new() -> Todo {
+        let scanner = Scanner::new();
+        let settings = Settings::new();
+        let fileWorker = FileWorker::new();
+        let fileNameDB: String = settings
+            .get(String::from("fileNameDB"))
+            .unwrap()
+            .to_string();
+        let tmplEmpty: String = settings
+            .template(String::from("emptyDB"))
+            .unwrap()
+            .to_string();
 
-        let content = fw.fileToString(fileNameDB.clone(), tmplEmpty.clone()).unwrap();
+        let content = fileWorker
+            .fileToString(fileNameDB.clone(), tmplEmpty.clone())
+            .unwrap();
 
         Todo {
             properties: Self::initProperties(content.clone()),
             items: Self::initItems(content.clone()),
+            fileWorker,
+            settings,
+            scanner,
         }
     }
-
 
     fn initProperties(data: String) -> Properties {
         let parsed: Result<TodoJSON> = parse(data);
@@ -75,7 +82,7 @@ impl Todo {
         parsed.unwrap().items
     }
 
-    pub fn addTask(mut self, title: &str) -> Self {
+    pub fn addTask(&mut self, title: &str) -> &Self {
         let todoItem = TodoItem {
             status: false,
             title: String::from(title),
@@ -85,7 +92,8 @@ impl Todo {
         self.items.push(todoItem);
         self
     }
-    pub fn done(mut self, index: usize) -> Self {
+
+    pub fn done(&mut self, index: usize) -> &Self {
         let mut isOverflow = false;
         if index > self.items.len() {
             isOverflow = true;
@@ -96,8 +104,9 @@ impl Todo {
         self
     }
 
-    pub fn show(self) -> Self {
+    pub fn show(&self) -> &Self {
         println!("\n\n");
+        line();
         let json = serde_json::to_value(&self.properties).unwrap();
         println!("properties");
         if let Value::Object(map) = json {
@@ -116,13 +125,36 @@ impl Todo {
                 index, status, title, created, ended
             );
         }
-        self
+        line();
+        &self
     }
-    pub fn sync(self) -> Self {
-       let json_string = serde_json::to_string(&self).unwrap();
-       println!("{}", json_string);
-       let fileNameDB: String = settings.get(String::from("fileNameDB")).unwrap().to_string();
-       fw.write(fileNameDB, json_string);
-       self
+
+    pub fn sync(&self) -> &Self {
+        let json_string = stringify(&self);
+        let fileNameDB: String = self
+            .settings
+            .get(String::from("fileNameDB"))
+            .unwrap()
+            .to_string();
+        self.fileWorker.write(fileNameDB, json_string).unwrap();
+        &self
+    }
+
+    pub fn run(&mut self) -> &Self {
+        let scannerRef = &self.scanner;
+        match scannerRef.command.as_str() {
+            "log" => self.show(),
+            "show" => self.show(),
+            "ls" => self.show(),
+            "add" => self
+                .addTask(scannerRef.param.clone().as_str())
+                .sync()
+                .show(),
+            "push" => self
+                .addTask(scannerRef.param.clone().as_str())
+                .sync()
+                .show(),
+            &_ => self,
+        }
     }
 }
