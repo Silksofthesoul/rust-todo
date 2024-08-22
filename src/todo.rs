@@ -1,5 +1,7 @@
 #![allow(non_snake_case)]
 
+use std::collections::HashMap;
+
 use crate::fileWorker::FileWorker;
 use crate::library::json::{parse, stringify};
 use crate::library::print::line;
@@ -14,12 +16,7 @@ use serde_json::Value;
 // use std::collections::HashMap;
 // use std::vec::Vec;
 
-#[derive(Serialize, Deserialize, Debug)]
-struct Properties {
-    ownerName: String,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TodoItem {
     status: bool,
     title: String,
@@ -27,15 +24,15 @@ pub struct TodoItem {
     ended: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct TodoJSON {
-    properties: Properties,
+    properties: HashMap<String, String>,
     items: Vec<TodoItem>,
 }
 
 #[derive(Serialize)]
 pub struct Todo {
-    properties: Properties,
+    properties: HashMap<String, String>,
     items: Vec<TodoItem>,
     #[serde(skip_serializing, skip_deserializing)]
     fileWorker: FileWorker,
@@ -72,7 +69,7 @@ impl Todo {
         }
     }
 
-    fn initProperties(data: String) -> Properties {
+    fn initProperties(data: String) -> HashMap<String, String> {
         let parsed: Result<TodoJSON> = parse(data);
         parsed.unwrap().properties
     }
@@ -80,6 +77,42 @@ impl Todo {
     fn initItems(data: String) -> Vec<TodoItem> {
         let parsed: Result<TodoJSON> = parse(data);
         parsed.unwrap().items
+    }
+
+    pub fn setPropery(&mut self, key: String, params: Vec<String>) -> &Self {
+        let value: String = params.get(1).unwrap().to_string();
+        self.properties.insert(key.clone(), value.clone());
+        println!("----{}: {}--------", key.clone(), value.clone());
+        self
+    }
+
+    pub fn getPropery(&self, key: String) {
+        //let val = self.properties.get(&key.clone()).unwrap().to_string();
+        let undefined = String::from("undefined");
+        let mut isNotExist = false;
+        let val = self
+            .properties
+            .get(&key.clone().to_string())
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| {
+                isNotExist = true;
+                undefined.clone()
+            });
+        if val.clone() == undefined.clone() {
+            println!("properties: ");
+            for (key, value) in &self.properties {
+                println!("{}: {}", key, value);
+            }
+        } else {
+            let displayKey = (|| {
+                if isNotExist {
+                    format!("{} ( not exist )", key.clone())
+                } else {
+                    key.clone().to_string()
+                }
+            })();
+            println!("{}: {}", displayKey, val);
+        }
     }
 
     pub fn addTask(&mut self, title: &str) -> &Self {
@@ -104,24 +137,39 @@ impl Todo {
         self
     }
 
+    pub fn undone(&mut self, index: usize) -> &Self {
+        let mut isOverflow = false;
+        if index > self.items.len() {
+            isOverflow = true;
+        }
+        if !isOverflow {
+            self.items[index].status = false;
+        }
+        self
+    }
+
     pub fn show(&self) -> &Self {
         println!("\n\n");
         line();
         let json = serde_json::to_value(&self.properties).unwrap();
-        println!("properties");
+        println!("\x1b[90mproperties:\x1b[0m");
         if let Value::Object(map) = json {
             for (key, value) in map {
-                println!("{}:\t{}", key, value);
+                println!("{}:\t\x1b[33m{}\x1b[0m", key, value);
             }
         }
-        println!("items:");
+        println!("\x1b[90mitems:\x1b[0m");
         for (index, val) in self.items.iter().enumerate() {
-            let status = if val.status { "[x]" } else { "[ ]" };
+            let status = if val.status {
+                "\x1b[32m[x]\x1b[0m"
+            } else {
+                "[ ]"
+            };
             let title = &val.title;
             let created = &val.created;
             let ended = &val.ended;
             println!(
-                "  {} \t{} \t{} \t{} \t{}",
+                "  \x1b[90m{}\x1b[0m \t{} \t\x1b[93m{}\x1b[0m \t{} \t{}",
                 index, status, title, created, ended
             );
         }
@@ -154,7 +202,28 @@ impl Todo {
                 .addTask(scannerRef.param.clone().as_str())
                 .sync()
                 .show(),
-            &_ => self,
+            "done" => self
+                .done(scannerRef.param.clone().parse().unwrap())
+                .sync()
+                .show(),
+            "undone" => self
+                .undone(scannerRef.param.clone().parse().unwrap())
+                .sync()
+                .show(),
+            "config" => {
+                self.getPropery(scannerRef.param.clone().to_string());
+                self
+            }
+            "set" => {
+                self.setPropery(
+                    scannerRef.param.clone().to_string(),
+                    scannerRef.params.clone(),
+                )
+                .sync()
+                .show();
+                self
+            }
+            &_ => self.show(),
         }
     }
 }

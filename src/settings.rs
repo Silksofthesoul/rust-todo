@@ -10,16 +10,18 @@ pub struct Settings {
 
 impl Settings {
     pub fn new() -> Settings {
-
         let mut settings: HashMap<String, String> = HashMap::new();
         settings.insert(String::from("fileNameDB"), String::from("todo.json"));
 
         let mut templates: HashMap<String, String> = HashMap::new();
-        templates.insert(String::from("emptyDB"), String::from(r#"{ "properties": { "ownerName": "Unnamed" }, "items": [] }"#));
+        templates.insert(
+            String::from("emptyDB"),
+            String::from(r#"{ "properties": { "test": "test-val" }, "items": [] }"#),
+        );
 
         Settings {
             settings,
-            templates
+            templates,
         }
     }
 
