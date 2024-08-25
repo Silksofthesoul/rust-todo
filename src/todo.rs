@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use crate::fileWorker::FileWorker;
 use crate::library::json::{parse, stringify};
 use crate::library::print::line;
+use crate::renderer::renderer::Renderer;
 use crate::scanner::Scanner;
 use crate::settings::Settings;
 
@@ -40,10 +41,13 @@ pub struct Todo {
     settings: Settings,
     #[serde(skip_serializing, skip_deserializing)]
     scanner: Scanner,
+    #[serde(skip_serializing, skip_deserializing)]
+    renderer: Renderer,
 }
 
 impl Todo {
     pub fn new() -> Todo {
+        let renderer = Renderer::new();
         let scanner = Scanner::new();
         let settings = Settings::new();
         let fileWorker = FileWorker::new();
@@ -66,6 +70,7 @@ impl Todo {
             fileWorker,
             settings,
             scanner,
+            renderer,
         }
     }
 
@@ -147,10 +152,61 @@ impl Todo {
         }
         self
     }
+    pub fn show2(&mut self) -> &Self {
+        {
+            let renderer = &mut self.renderer;
+
+            let cell1: String = renderer.red().setLine("name:").lightGray().flushLine();
+
+            let cell2: String = renderer
+                //.yellow()
+                .setLine("John")
+                //.lightGray()
+                .flushLine();
+
+            let cell3: String = renderer
+                //.red()
+                .setLine("address:")
+                //.lightGray()
+                .flushLine();
+
+            let cell4: String = renderer
+                //.yellow()
+                .setLine("London")
+                //.lightGray()
+                .flushLine();
+
+            let row1: Vec<String> = renderer.setRow(cell1).setRow(cell2).flushRow();
+            let row2: Vec<String> = renderer.setRow(cell3).setRow(cell4).flushRow();
+
+            let table: String = self.renderer.setTable(row1).setTable(row2).flushTable();
+
+            println!("{}", table);
+
+            //renderer
+            //    .setRow(
+            //    )
+            //    .render();
+            //renderer
+            //    .red()
+            //    .set("red")
+            //    .nl()
+            //    .green()
+            //    .set("green")
+            //    .reset()
+            //    .nl()
+            //    .set("default")
+            //    .topLine()
+            //    .bottomLine()
+            //    .render();
+        }
+        self
+    }
 
     pub fn show(&self) -> &Self {
         println!("\n\n");
         line();
+        //println!("{}", self.render.f("properties:", "lightGreen"));
         let json = serde_json::to_value(&self.properties).unwrap();
         println!("\x1b[90mproperties:\x1b[0m");
         if let Value::Object(map) = json {
@@ -193,6 +249,7 @@ impl Todo {
         match scannerRef.command.as_str() {
             "log" => self.show(),
             "show" => self.show(),
+            "show2" => self.show2(),
             "ls" => self.show(),
             "add" => self
                 .addTask(scannerRef.param.clone().as_str())
