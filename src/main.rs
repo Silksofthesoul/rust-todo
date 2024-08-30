@@ -4,6 +4,7 @@ mod fileWorker;
 mod renderer;
 mod scanner;
 mod settings;
+mod tString;
 mod todo;
 
 mod library {
