@@ -4,8 +4,8 @@ mod fileWorker;
 mod renderer;
 mod scanner;
 mod settings;
-mod tString;
 mod todo;
+mod tstring;
 
 mod library {
     pub mod json;
