@@ -1,99 +1,198 @@
 #![allow(non_snake_case)]
+#![allow(non_camel_case_types)]
 
+use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
-struct tString {
-    pub text: String,
-    pub props: Vec<String>,
-    pub isClosed: bool,
+// INFO: TString -- terminal string
+// концепт: строка содержащая текст, и аттрибуты.
+// при рендеринге, мы применяем аттрибуты для строки.
 
-    // properties collections:
-    pub attributes: HashMap<String, String>,
-    pub foreground: HashMap<String, String>,
-    pub background: HashMap<String, String>,
+#[derive(Debug, Clone)]
+pub struct TString {
+    pub text: String,
+    pub ansi: Vec<String>,
+    pub params: HashMap<String, String>,
 }
 
-impl tString {
-    pub fn new(text: String) -> tString {
-        let attributes: HashMap<String, String> = HashMap::from([
-            (String::from("reset"), String::from("\x1b[0m")),
-            (String::from("bold"), String::from("\x1b[1m")),
-            (String::from("underline"), String::from("\x1b[4m")),
-            (String::from("blink"), String::from("\x1b[5m")),
-            (String::from("boldOff"), String::from("\x1b[21m")),
-            (String::from("underlineOff"), String::from("\x1b[24m")),
-            (String::from("blinkOff"), String::from("\x1b[25m")),
-        ]);
+static SYMBOLS: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| {
+    let mut map = HashMap::new();
+    map.insert("space", " ");
+    map.insert("tab", "\t");
+    map.insert("enter", "\n");
+    map.insert("vspace", map.get("enter").unwrap());
+    map.insert("hspace", map.get("space").unwrap());
+    map
+});
 
-        let foreground: HashMap<String, String> = HashMap::from([
-            (String::from("black"), String::from("\x1b[30m")),
-            (String::from("red"), String::from("\x1b[31m")),
-            (String::from("green"), String::from("\x1b[32m")),
-            (String::from("yellow"), String::from("\x1b[33m")),
-            (String::from("blue"), String::from("\x1b[34m")),
-            (String::from("magenta"), String::from("\x1b[35m")),
-            (String::from("cyan"), String::from("\x1b[36m")),
-            (String::from("white"), String::from("\x1b[37m")),
-            (String::from("default"), String::from("\x1b[39m")),
-            (String::from("lightGray"), String::from("\x1b[90m")),
-            (String::from("lightRed"), String::from("\x1b[91m")),
-            (String::from("lightGreen"), String::from("\x1b[92m")),
-            (String::from("lightYellow"), String::from("\x1b[93m")),
-            (String::from("lightBlue"), String::from("\x1b[94m")),
-            (String::from("lightMagenta"), String::from("\x1b[95m")),
-            (String::from("lightCyan"), String::from("\x1b[96m")),
-            (String::from("lightWhite"), String::from("\x1b[97m")),
-        ]);
+static ATTRIBUTES: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| {
+    let mut map = HashMap::new();
+    map.insert("reset", "\x1b[0m");
+    map.insert("bold", "\x1b[1m");
+    map.insert("underline", "\x1b[4m");
+    map.insert("blink", "\x1b[5m");
+    map.insert("boldOff", "\x1b[21m");
+    map.insert("underlineOff", "\x1b[24m");
+    map.insert("blinkOff", "\x1b[25m");
+    map
+});
 
-        let background: HashMap<String, String> = HashMap::from([
-            (String::from("black"), String::from("\x1b[40m")),
-            (String::from("red"), String::from("\x1b[41m")),
-            (String::from("green"), String::from("\x1b[42m")),
-            (String::from("yellow"), String::from("\x1b[43m")),
-            (String::from("blue"), String::from("\x1b[44m")),
-            (String::from("magenta"), String::from("\x1b[45m")),
-            (String::from("cyan"), String::from("\x1b[46m")),
-            (String::from("white"), String::from("\x1b[47m")),
-            (String::from("default"), String::from("\x1b[49m")),
-            (String::from("lightGray"), String::from("\x1b[100m")),
-            (String::from("lightRed"), String::from("\x1b[101m")),
-            (String::from("lightGreen"), String::from("\x1b[102m")),
-            (String::from("lightYellow"), String::from("\x1b[103m")),
-            (String::from("lightBlue"), String::from("\x1b[104m")),
-            (String::from("lightMagenta"), String::from("\x1b[105m")),
-            (String::from("lightCyan"), String::from("\x1b[106m")),
-            (String::from("lightWhite"), String::from("\x1b[107m")),
-        ]);
+static FOREGROUND: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| {
+    let mut map = HashMap::new();
+    map.insert("black", "\x1b[30m");
+    map.insert("red", "\x1b[31m");
+    map.insert("green", "\x1b[32m");
+    map.insert("yellow", "\x1b[33m");
+    map.insert("blue", "\x1b[34m");
+    map.insert("magenta", "\x1b[35m");
+    map.insert("cyan", "\x1b[36m");
+    map.insert("white", "\x1b[37m");
+    map.insert("default", "\x1b[39m");
+    map.insert("lightGray", "\x1b[90m");
+    map.insert("lightRed", "\x1b[91m");
+    map.insert("lightGreen", "\x1b[92m");
+    map.insert("lightYellow", "\x1b[93m");
+    map.insert("lightBlue", "\x1b[94m");
+    map.insert("lightMagenta", "\x1b[95m");
+    map.insert("lightCyan", "\x1b[96m");
+    map.insert("lightWhite", "\x1b[97m");
+    map
+});
 
-        tString {
+static BACKGROUND: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| {
+    let mut map = HashMap::new();
+    map.insert("black", "\x1b[40m");
+    map.insert("red", "\x1b[41m");
+    map.insert("green", "\x1b[42m");
+    map.insert("yellow", "\x1b[43m");
+    map.insert("blue", "\x1b[44m");
+    map.insert("magenta", "\x1b[45m");
+    map.insert("cyan", "\x1b[46m");
+    map.insert("white", "\x1b[47m");
+    map.insert("default", "\x1b[49m");
+    map.insert("lightGray", "\x1b[100m");
+    map.insert("lightRed", "\x1b[101m");
+    map.insert("lightGreen", "\x1b[102m");
+    map.insert("lightYellow", "\x1b[103m");
+    map.insert("lightBlue", "\x1b[104m");
+    map.insert("lightMagenta", "\x1b[105m");
+    map.insert("lightCyan", "\x1b[106m");
+    map.insert("lightWhite", "\x1b[107m");
+    map
+});
+
+impl TString {
+    pub fn new(text: String) -> TString {
+        TString {
             text,
-            isClosed: true,
-            props: Vec::new(),
-
-            // properties collections:
-            attributes,
-            foreground,
-            background,
+            ansi: Vec::new(),
+            params: HashMap::new(),
         }
     }
 
-    // pub fn addAttribute(mut self, attribute: String) -> tString {
-    //     self.attributes.push(attribute);
-    //     self
-    // }
-
-    pub fn addAttributes(mut self, attributes: Vec<String>) -> tString {
-        self.attributes.extend(attributes);
+    pub fn setAnsi(mut self, prop: String) -> TString {
+        self.ansi.push(prop);
         self
     }
 
-    pub fn close(mut self) -> tString {
-        self.isClosed = true;
+    pub fn setParam(mut self, key: String, value: String) -> TString {
+        self.params.insert(key, value);
         self
     }
 
-    pub fn open(mut self) -> tString {
-        self.isClosed = false;
-        self
+    pub fn getLength(&self) -> usize {
+        self.text.len()
+    }
+    pub fn getText(&self) -> String {
+        self.text.clone()
+    }
+    pub fn getAnsi(&self) -> Vec<String> {
+        self.ansi.clone()
+    }
+    pub fn view(&self) -> String {
+        let mut result = String::new();
+        for a in &self.ansi {
+            result.push_str(a);
+        }
+        let padStart = &self
+            .params
+            .get("padStart")
+            .unwrap_or(&String::from("0"))
+            .parse::<usize>()
+            .unwrap();
+
+        let padEnd = &self
+            .params
+            .get("padEnd")
+            .unwrap_or(&String::from("0"))
+            .parse::<usize>()
+            .unwrap();
+
+        if padStart > &(0 as usize) {
+            result = &self.padStart(*padStart);
+        } else if padEnd > &(0 as usize) {
+            result = &self.padEnd(*padEnd);
+        }
+
+        result.push_str(&self.text);
+        result.push_str(TString::getAttributes("reset").as_str());
+        result
+    }
+
+    pub fn padStart(self, len: usize) -> String {
+        let currentLength = self.getLength();
+        let mut result = self.view();
+        if currentLength >= len {
+            return result;
+        }
+        let pad = TString::getSymbol("hspace");
+        for _ in 0..len {
+            result.insert_str(0, pad.as_str());
+        }
+        result
+    }
+
+    pub fn padEnd(self, len: usize) -> String {
+        let currentLength = self.getLength();
+        let mut result = self.view();
+        if currentLength >= len {
+            return result;
+        }
+        let pad = TString::getSymbol("hspace");
+        for _ in 0..len {
+            result.push_str(pad.as_str());
+        }
+        result
+    }
+
+    // STATIC
+    pub fn getSymbol(key: &str) -> String {
+        if let Some(val) = SYMBOLS.get(key) {
+            val.to_string()
+        } else {
+            String::from("")
+        }
+    }
+
+    pub fn getAttributes(key: &str) -> String {
+        if let Some(val) = ATTRIBUTES.get(key) {
+            val.to_string()
+        } else {
+            String::from("")
+        }
+    }
+    pub fn getForeground(key: &str) -> String {
+        if let Some(val) = FOREGROUND.get(key) {
+            val.to_string()
+        } else {
+            String::from("")
+        }
+    }
+    pub fn getBackground(key: &str) -> String {
+        if let Some(val) = BACKGROUND.get(key) {
+            val.to_string()
+        } else {
+            String::from("")
+        }
     }
 }

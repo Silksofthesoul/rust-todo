@@ -8,6 +8,7 @@ use crate::library::print::line;
 use crate::renderer::renderer::Renderer;
 use crate::scanner::Scanner;
 use crate::settings::Settings;
+use crate::tstring::TString::{TString, TString as TStringStatic};
 
 // use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -154,34 +155,44 @@ impl Todo {
     }
     pub fn show2(&mut self) -> &Self {
         {
-            let renderer = &mut self.renderer;
+            //let renderer = &mut self.renderer;
 
-            let cell1: String = renderer.red().setLine("name:").lightGray().flushLine();
+            //let cell1: String = renderer.red().setLine("name:").lightGray().flushLine();
+            //
+            //let cell2: String = renderer
+            //    //.yellow()
+            //    .setLine("John")
+            //    //.lightGray()
+            //    .flushLine();
+            //
+            //let cell3: String = renderer
+            //    //.red()
+            //    .setLine("address:")
+            //    //.lightGray()
+            //    .flushLine();
+            //
+            //let cell4: String = renderer
+            //    //.yellow()
+            //    .setLine("London")
+            //    //.lightGray()
+            //    .flushLine();
+            //
+            //let row1: Vec<String> = renderer.setRow(cell1).setRow(cell2).flushRow();
+            //let row2: Vec<String> = renderer.setRow(cell3).setRow(cell4).flushRow();
+            //
+            //let table: String = self.renderer.setTable(row1).setTable(row2).flushTable();
+            //
+            let tsRed = TString::new(String::from("red string"));
+            let tsRed = tsRed.setAnsi(TStringStatic::getForeground("red"));
+            let tsGreen = TString::new(String::from("green string"));
+            let tsGreen = tsGreen.setAnsi(TStringStatic::getForeground("green"));
 
-            let cell2: String = renderer
-                //.yellow()
-                .setLine("John")
-                //.lightGray()
-                .flushLine();
-
-            let cell3: String = renderer
-                //.red()
-                .setLine("address:")
-                //.lightGray()
-                .flushLine();
-
-            let cell4: String = renderer
-                //.yellow()
-                .setLine("London")
-                //.lightGray()
-                .flushLine();
-
-            let row1: Vec<String> = renderer.setRow(cell1).setRow(cell2).flushRow();
-            let row2: Vec<String> = renderer.setRow(cell3).setRow(cell4).flushRow();
-
-            let table: String = self.renderer.setTable(row1).setTable(row2).flushTable();
-
-            println!("{}", table);
+            println!("{:?}", tsRed);
+            println!("{:?}", tsRed.getLength());
+            println!("{}", tsRed.view());
+            println!("{:?}", tsGreen);
+            println!("{:?}", tsGreen.getLength());
+            println!("{}", tsGreen.view());
 
             //renderer
             //    .setRow(
