@@ -128,11 +128,15 @@ impl TString {
             .parse::<usize>()
             .unwrap();
 
-        if padStart > &(0 as usize) {
-            result = &self.padStart(*padStart);
-        } else if padEnd > &(0 as usize) {
-            result = &self.padEnd(*padEnd);
-        }
+        let r = "sss";
+
+        println!("trace: {:?}, {:?}", padStart, padEnd);
+
+        //if padStart > &(0 as usize) {
+        //    let result = &self.padStart(*padStart);
+        //} else if padEnd > &(0 as usize) {
+        //    let result = &self.padEnd(*padEnd);
+        //}
 
         result.push_str(&self.text);
         result.push_str(TString::getAttributes("reset").as_str());
