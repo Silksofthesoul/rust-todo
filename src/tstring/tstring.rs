@@ -2,7 +2,9 @@
 #![allow(non_camel_case_types)]
 
 use once_cell::sync::Lazy;
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::write, usize};
+
+use crate::library::print;
 
 // INFO: TString -- terminal string
 // концепт: строка содержащая текст, и аттрибуты.
@@ -81,6 +83,14 @@ static BACKGROUND: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| {
     map
 });
 
+fn substractUsize(a: usize, b: usize) -> usize {
+    if a > b {
+        (a - b) as usize
+    } else {
+        0 as usize
+    }
+}
+
 impl TString {
     pub fn new(text: String) -> TString {
         TString {
@@ -110,10 +120,46 @@ impl TString {
         self.ansi.clone()
     }
     pub fn view(&self) -> String {
+        // ANSI:
         let mut result = String::new();
         for a in &self.ansi {
             result.push_str(a);
         }
+
+        result.push_str(&self.text);
+        result.push_str(TString::getAttributes("reset").as_str());
+
+        // PARAMS: Align & Width
+
+        let width = &self
+            .params
+            .get("width")
+            .unwrap_or(&String::from("0"))
+            .parse::<usize>()
+            .unwrap();
+
+        let binding = String::from("left");
+        let align = &self.params.get("align").unwrap_or(&binding);
+
+        let currentLength = self.getLength();
+        let pad = TString::getSymbol("hspace");
+
+        if width > &(0 as usize) && width > &(currentLength) {
+            if *align == "right" {
+                let len: usize = substractUsize(*width, currentLength);
+                for _ in 0..len {
+                    result.insert_str(0, pad.as_str());
+                }
+            } else if *align == "left" {
+                let len: usize = substractUsize(*width, currentLength);
+                for _ in 0..len {
+                    result.push_str(pad.as_str());
+                }
+            }
+        }
+
+        // PARAMS: InnerPadding
+
         let padStart = &self
             .params
             .get("padStart")
@@ -127,45 +173,17 @@ impl TString {
             .unwrap_or(&String::from("0"))
             .parse::<usize>()
             .unwrap();
-
-        let r = "sss";
-
-        println!("trace: {:?}, {:?}", padStart, padEnd);
-
-        //if padStart > &(0 as usize) {
-        //    let result = &self.padStart(*padStart);
-        //} else if padEnd > &(0 as usize) {
-        //    let result = &self.padEnd(*padEnd);
-        //}
-
-        result.push_str(&self.text);
-        result.push_str(TString::getAttributes("reset").as_str());
-        result
-    }
-
-    pub fn padStart(self, len: usize) -> String {
-        let currentLength = self.getLength();
-        let mut result = self.view();
-        if currentLength >= len {
-            return result;
+        if padStart > &(0 as usize) {
+            for _ in 0..*padStart {
+                result.insert_str(0, pad.as_str());
+            }
         }
-        let pad = TString::getSymbol("hspace");
-        for _ in 0..len {
-            result.insert_str(0, pad.as_str());
+        if padEnd > &(0 as usize) {
+            for _ in 0..*padEnd {
+                result.push_str(pad.as_str());
+            }
         }
-        result
-    }
 
-    pub fn padEnd(self, len: usize) -> String {
-        let currentLength = self.getLength();
-        let mut result = self.view();
-        if currentLength >= len {
-            return result;
-        }
-        let pad = TString::getSymbol("hspace");
-        for _ in 0..len {
-            result.push_str(pad.as_str());
-        }
         result
     }
 

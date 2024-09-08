@@ -1,1 +1,1 @@
-pub mod TString;
+pub mod tstring;

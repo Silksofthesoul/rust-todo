@@ -8,7 +8,7 @@ use crate::library::print::line;
 use crate::renderer::renderer::Renderer;
 use crate::scanner::Scanner;
 use crate::settings::Settings;
-use crate::tstring::TString::{TString, TString as TStringStatic};
+use crate::tstring::tstring::{TString, TString as TStringStatic};
 
 // use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -182,17 +182,22 @@ impl Todo {
             //
             //let table: String = self.renderer.setTable(row1).setTable(row2).flushTable();
             //
-            let tsRed = TString::new(String::from("red string"));
-            let tsRed = tsRed.setAnsi(TStringStatic::getForeground("red"));
-            let tsGreen = TString::new(String::from("green string"));
-            let tsGreen = tsGreen.setAnsi(TStringStatic::getForeground("green"));
 
-            println!("{:?}", tsRed);
-            println!("{:?}", tsRed.getLength());
-            println!("{}", tsRed.view());
-            println!("{:?}", tsGreen);
-            println!("{:?}", tsGreen.getLength());
-            println!("{}", tsGreen.view());
+            let tsRed = TString::new(String::from("red string"));
+            let tsRed = tsRed
+                .setAnsi(TStringStatic::getForeground("red"))
+                .setParam("align".to_string(), "right".to_string())
+                .setParam("padEnd".to_string(), "2".to_string())
+                .setParam("width".to_string(), "30".to_string());
+            let tsGreen = TString::new(String::from("green string"));
+            let tsGreen = tsGreen
+                .setAnsi(TStringStatic::getForeground("green"))
+                .setParam("align".to_string(), "right".to_string())
+                .setParam("padEnd".to_string(), "2".to_string())
+                .setParam("width".to_string(), "30".to_string());
+
+            println!("|{}|", tsRed.view());
+            println!("|{}|", tsGreen.view());
 
             //renderer
             //    .setRow(
