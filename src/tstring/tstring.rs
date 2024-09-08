@@ -2,9 +2,7 @@
 #![allow(non_camel_case_types)]
 
 use once_cell::sync::Lazy;
-use std::{collections::HashMap, fmt::write, usize};
-
-use crate::library::print;
+use std::{collections::HashMap, usize};
 
 // INFO: TString -- terminal string
 // концепт: строка содержащая текст, и аттрибуты.

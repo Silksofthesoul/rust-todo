@@ -11,7 +11,6 @@ mod library {
     pub mod json;
     pub mod math;
     pub mod print;
-    pub mod strHelpers;
 }
 
 use todo::Todo;
