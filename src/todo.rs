@@ -5,9 +5,11 @@ use std::collections::HashMap;
 use crate::fileWorker::FileWorker;
 use crate::library::json::{parse, stringify};
 use crate::library::print::line;
-use crate::renderer::renderer::Renderer;
 use crate::scanner::Scanner;
 use crate::settings::Settings;
+use crate::terminaltablerenderer::terminaltablerenderer::{
+    TerminalTableRenderer as TTR, TerminalTableRenderer,
+};
 use crate::tstring::tstring::{TString, TString as TStringStatic};
 
 // use chrono::{DateTime, Utc};
@@ -43,12 +45,12 @@ pub struct Todo {
     #[serde(skip_serializing, skip_deserializing)]
     scanner: Scanner,
     #[serde(skip_serializing, skip_deserializing)]
-    renderer: Renderer,
+    renderer: TTR,
 }
 
 impl Todo {
     pub fn new() -> Todo {
-        let renderer = Renderer::new();
+        let renderer = TTR::new();
         let scanner = Scanner::new();
         let settings = Settings::new();
         let fileWorker = FileWorker::new();
@@ -155,33 +157,7 @@ impl Todo {
     }
     pub fn show2(&mut self) -> &Self {
         {
-            //let renderer = &mut self.renderer;
-
-            //let cell1: String = renderer.red().setLine("name:").lightGray().flushLine();
-            //
-            //let cell2: String = renderer
-            //    //.yellow()
-            //    .setLine("John")
-            //    //.lightGray()
-            //    .flushLine();
-            //
-            //let cell3: String = renderer
-            //    //.red()
-            //    .setLine("address:")
-            //    //.lightGray()
-            //    .flushLine();
-            //
-            //let cell4: String = renderer
-            //    //.yellow()
-            //    .setLine("London")
-            //    //.lightGray()
-            //    .flushLine();
-            //
-            //let row1: Vec<String> = renderer.setRow(cell1).setRow(cell2).flushRow();
-            //let row2: Vec<String> = renderer.setRow(cell3).setRow(cell4).flushRow();
-            //
-            //let table: String = self.renderer.setTable(row1).setTable(row2).flushTable();
-            //
+            let renderer: &mut TerminalTableRenderer = &mut self.renderer;
 
             let tsRed = TString::new(String::from("red string"));
             let tsRed = tsRed
@@ -199,22 +175,15 @@ impl Todo {
             println!("|{}|", tsRed.view());
             println!("|{}|", tsGreen.view());
 
-            //renderer
-            //    .setRow(
-            //    )
-            //    .render();
-            //renderer
-            //    .red()
-            //    .set("red")
-            //    .nl()
-            //    .green()
-            //    .set("green")
-            //    .reset()
-            //    .nl()
-            //    .set("default")
-            //    .topLine()
-            //    .bottomLine()
-            //    .render();
+            renderer
+                .setHeader(vec![
+                    TString::new(String::from("Status")),
+                    TString::new(String::from("Title")),
+                    TString::new(String::from("Created")),
+                    TString::new(String::from("Ended")),
+                ])
+                .setRow(vec![tsRed.clone(), tsGreen.clone()])
+                .render();
         }
         self
     }

@@ -1,9 +1,9 @@
 #![allow(non_snake_case)]
 
 mod fileWorker;
-mod renderer;
 mod scanner;
 mod settings;
+mod terminaltablerenderer;
 mod todo;
 mod tstring;
 
