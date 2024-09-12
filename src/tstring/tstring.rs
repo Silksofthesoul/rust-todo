@@ -17,7 +17,7 @@ pub struct TString {
 
 static SYMBOLS: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| {
     let mut map = HashMap::new();
-    map.insert("space", " ");
+    map.insert("space", "*");
     map.insert("tab", "\t");
     map.insert("enter", "\n");
     map.insert("vspace", map.get("enter").unwrap());
@@ -98,12 +98,12 @@ impl TString {
         }
     }
 
-    pub fn setAnsi(mut self, prop: String) -> TString {
+    pub fn setAnsi(&mut self, prop: String) -> &mut Self {
         self.ansi.push(prop);
         self
     }
 
-    pub fn setParam(mut self, key: String, value: String) -> TString {
+    pub fn setParam(&mut self, key: String, value: String) -> &mut Self {
         self.params.insert(key, value);
         self
     }

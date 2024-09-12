@@ -156,35 +156,54 @@ impl Todo {
         self
     }
     pub fn show2(&mut self) -> &Self {
-        {
-            let renderer: &mut TerminalTableRenderer = &mut self.renderer;
+        let renderer = &mut self.renderer;
 
-            let tsRed = TString::new(String::from("red string"));
-            let tsRed = tsRed
-                .setAnsi(TStringStatic::getForeground("red"))
-                .setParam("align".to_string(), "right".to_string())
-                .setParam("padEnd".to_string(), "2".to_string())
-                .setParam("width".to_string(), "30".to_string());
-            let tsGreen = TString::new(String::from("green string"));
-            let tsGreen = tsGreen
-                .setAnsi(TStringStatic::getForeground("green"))
-                .setParam("align".to_string(), "right".to_string())
-                .setParam("padEnd".to_string(), "2".to_string())
-                .setParam("width".to_string(), "30".to_string());
+        //let tsRed = TString::new(String::from("red string"));
+        //let tsRed = tsRed
+        //    .setAnsi(TStringStatic::getForeground("red"))
+        //    .setParam("align".to_string(), "right".to_string())
+        //    .setParam("padEnd".to_string(), "2".to_string())
+        //    .setParam("width".to_string(), "30".to_string());
+        //let tsGreen = TString::new(String::from("green string"));
+        //let tsGreen = tsGreen
+        //    .setAnsi(TStringStatic::getForeground("green"))
+        //    .setParam("align".to_string(), "right".to_string())
+        //    .setParam("padEnd".to_string(), "2".to_string())
+        //    .setParam("width".to_string(), "30".to_string());
+        //
+        //println!("|{}|", tsRed.view());
+        //println!("|{}|", tsGreen.view());
 
-            println!("|{}|", tsRed.view());
-            println!("|{}|", tsGreen.view());
+        let mut columnLength: Vec<usize> =
+            vec![0 as usize, 0 as usize, 0 as usize, 0 as usize, 0 as usize];
 
-            renderer
-                .setHeader(vec![
-                    TString::new(String::from("Status")),
-                    TString::new(String::from("Title")),
-                    TString::new(String::from("Created")),
-                    TString::new(String::from("Ended")),
-                ])
-                .setRow(vec![tsRed.clone(), tsGreen.clone()])
-                .render();
+        renderer.setHeader(vec![
+            TString::new(String::from("#")),
+            TString::new(String::from("Status")),
+            TString::new(String::from("Title")),
+            TString::new(String::from("Created")),
+            TString::new(String::from("Ended")),
+        ]);
+
+        for (index, val) in self.items.iter().enumerate() {
+            let number: &mut TString = &mut TString::new(index.to_string());
+            number.setAnsi(TStringStatic::getForeground("lightGray"));
+            number.setAnsi(TStringStatic::getForeground("lightGray"));
+            let status: TString = if val.status {
+                let status = &mut TString::new("[x]".to_string());
+                status.setAnsi(TStringStatic::getForeground("green"));
+                status.clone()
+            } else {
+                TString::new("[ ]".to_string())
+            };
+            let title = TString::new(val.title.to_string());
+            let created = TString::new(val.created.to_string());
+            let ended = TString::new(val.ended.to_string());
+            renderer.setRow(vec![number.clone(), status, title, created, ended]);
         }
+
+        renderer.adaptColumnLengths().render();
+
         self
     }
 
