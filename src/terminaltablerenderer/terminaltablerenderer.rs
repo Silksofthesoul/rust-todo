@@ -50,7 +50,6 @@ impl TerminalTableRenderer {
                     .setParam("align".to_string(), "left".to_string())
                     .setParam("padStart".to_string(), "1".to_string())
                     .setParam("padEnd".to_string(), "1".to_string());
-                println!("{:?}", cell);
                 //row[index] = cell;
             }
         }
