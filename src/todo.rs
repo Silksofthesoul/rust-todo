@@ -4,7 +4,6 @@ use std::collections::HashMap;
 
 use crate::fileWorker::FileWorker;
 use crate::library::json::{parse, stringify};
-use crate::library::print::line;
 use crate::scanner::Scanner;
 use crate::settings::Settings;
 use crate::terminaltablerenderer::terminaltablerenderer::{
@@ -87,7 +86,7 @@ impl Todo {
         parsed.unwrap().items
     }
 
-    pub fn setPropery(&mut self, key: String, params: Vec<String>) -> &Self {
+    pub fn setPropery(&mut self, key: String, params: Vec<String>) -> &mut Self {
         let value: String = params.get(1).unwrap().to_string();
         self.properties.insert(key.clone(), value.clone());
         println!("----{}: {}--------", key.clone(), value.clone());
@@ -123,7 +122,7 @@ impl Todo {
         }
     }
 
-    pub fn addTask(&mut self, title: &str) -> &Self {
+    pub fn addTask(&mut self, title: &str) -> &mut Self {
         let todoItem = TodoItem {
             status: false,
             title: String::from(title),
@@ -134,7 +133,7 @@ impl Todo {
         self
     }
 
-    pub fn done(&mut self, index: usize) -> &Self {
+    pub fn done(&mut self, index: usize) -> &mut Self {
         let mut isOverflow = false;
         if index > self.items.len() {
             isOverflow = true;
@@ -145,7 +144,7 @@ impl Todo {
         self
     }
 
-    pub fn undone(&mut self, index: usize) -> &Self {
+    pub fn undone(&mut self, index: usize) -> &mut Self {
         let mut isOverflow = false;
         if index > self.items.len() {
             isOverflow = true;
@@ -155,37 +154,21 @@ impl Todo {
         }
         self
     }
-    pub fn show2(&mut self) -> &Self {
+    pub fn show(&mut self) -> &mut Self {
         let renderer = &mut self.renderer;
-
-        //let tsRed = TString::new(String::from("red string"));
-        //let tsRed = tsRed
-        //    .setAnsi(TStringStatic::getForeground("red"))
-        //    .setParam("align".to_string(), "right".to_string())
-        //    .setParam("padEnd".to_string(), "2".to_string())
-        //    .setParam("width".to_string(), "30".to_string());
-        //let tsGreen = TString::new(String::from("green string"));
-        //let tsGreen = tsGreen
-        //    .setAnsi(TStringStatic::getForeground("green"))
-        //    .setParam("align".to_string(), "right".to_string())
-        //    .setParam("padEnd".to_string(), "2".to_string())
-        //    .setParam("width".to_string(), "30".to_string());
-        //
-        //println!("|{}|", tsRed.view());
-        //println!("|{}|", tsGreen.view());
-
-        let mut columnLength: Vec<usize> =
-            vec![0 as usize, 0 as usize, 0 as usize, 0 as usize, 0 as usize];
+        let items = &self.items;
+        let mut titleNumber = TString::new(String::from("#"));
+        titleNumber.setAnsi(TStringStatic::getForeground("lightGray"));
 
         renderer.setHeader(vec![
-            TString::new(String::from("#")),
+            titleNumber,
             TString::new(String::from("Status")),
             TString::new(String::from("Title")),
             TString::new(String::from("Created")),
             TString::new(String::from("Ended")),
         ]);
 
-        for (index, val) in self.items.iter().enumerate() {
+        for (index, val) in items.iter().enumerate() {
             let number: &mut TString = &mut TString::new(index.to_string());
             number.setAnsi(TStringStatic::getForeground("lightGray"));
             number.setAnsi(TStringStatic::getForeground("lightGray"));
@@ -196,7 +179,13 @@ impl Todo {
             } else {
                 TString::new("[ ]".to_string())
             };
-            let title = TString::new(val.title.to_string());
+            let title = if val.status {
+                let mut title = TString::new(val.title.to_string());
+                title.setAnsi(TStringStatic::getForeground("lightGreen"));
+                title
+            } else {
+                TString::new(val.title.to_string())
+            };
             let created = TString::new(val.created.to_string());
             let ended = TString::new(val.ended.to_string());
             renderer.setRow(vec![number.clone(), status, title, created, ended]);
@@ -207,37 +196,7 @@ impl Todo {
         self
     }
 
-    pub fn show(&self) -> &Self {
-        println!("\n\n");
-        line();
-        //println!("{}", self.render.f("properties:", "lightGreen"));
-        let json = serde_json::to_value(&self.properties).unwrap();
-        println!("\x1b[90mproperties:\x1b[0m");
-        if let Value::Object(map) = json {
-            for (key, value) in map {
-                println!("{}:\t\x1b[33m{}\x1b[0m", key, value);
-            }
-        }
-        println!("\x1b[90mitems:\x1b[0m");
-        for (index, val) in self.items.iter().enumerate() {
-            let status = if val.status {
-                "\x1b[32m[x]\x1b[0m"
-            } else {
-                "[ ]"
-            };
-            let title = &val.title;
-            let created = &val.created;
-            let ended = &val.ended;
-            println!(
-                "  \x1b[90m{}\x1b[0m \t{} \t\x1b[93m{}\x1b[0m \t{} \t{}",
-                index, status, title, created, ended
-            );
-        }
-        line();
-        &self
-    }
-
-    pub fn sync(&self) -> &Self {
+    pub fn sync(&mut self) -> &mut Self {
         let json_string = stringify(&self);
         let fileNameDB: String = self
             .settings
@@ -245,15 +204,65 @@ impl Todo {
             .unwrap()
             .to_string();
         self.fileWorker.write(fileNameDB, json_string).unwrap();
-        &self
+        self
     }
 
-    pub fn run(&mut self) -> &Self {
+    pub fn help(&mut self) -> &mut Self {
+        let mut renderer = &mut self.renderer;
+        renderer.setHeader(vec![
+            TString::new(String::from("Command")),
+            TString::new(String::from("Description")),
+        ]);
+        renderer.setRow(vec![
+            TString::new(String::from("log")),
+            TString::new(String::from("Show all tasks")),
+        ]);
+        renderer.setRow(vec![
+            TString::new(String::from("show")),
+            TString::new(String::from("Show all tasks")),
+        ]);
+        renderer.setRow(vec![
+            TString::new(String::from("ls")),
+            TString::new(String::from("Show all tasks")),
+        ]);
+        renderer.setRow(vec![
+            TString::new(String::from("add")),
+            TString::new(String::from("Add a task")),
+        ]);
+        renderer.setRow(vec![
+            TString::new(String::from("push")),
+            TString::new(String::from("Add a task")),
+        ]);
+        renderer.setRow(vec![
+            TString::new(String::from("done")),
+            TString::new(String::from("Mark a task as done")),
+        ]);
+        renderer.setRow(vec![
+            TString::new(String::from("undone")),
+            TString::new(String::from("Mark a task as undone")),
+        ]);
+        renderer.setRow(vec![
+            TString::new(String::from("config")),
+            TString::new(String::from("Show a property")),
+        ]);
+        renderer.setRow(vec![
+            TString::new(String::from("set")),
+            TString::new(String::from("Set a property")),
+        ]);
+        renderer.setRow(vec![
+            TString::new(String::from("help")),
+            TString::new(String::from("Show this help")),
+        ]);
+        renderer.adaptColumnLengths().render();
+        self
+    }
+
+    pub fn run(&mut self) -> &mut Self {
         let scannerRef = &self.scanner;
         match scannerRef.command.as_str() {
             "log" => self.show(),
             "show" => self.show(),
-            "show2" => self.show2(),
+            //"show2" => self.show2(),
             "ls" => self.show(),
             "add" => self
                 .addTask(scannerRef.param.clone().as_str())
@@ -282,6 +291,10 @@ impl Todo {
                 )
                 .sync()
                 .show();
+                self
+            }
+            "help" => {
+                self.help();
                 self
             }
             &_ => self.show(),
