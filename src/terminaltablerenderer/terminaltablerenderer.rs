@@ -56,7 +56,14 @@ impl TerminalTableRenderer {
         self
     }
 
-    pub fn render(&self) {
+    pub fn flush(&mut self) -> &mut Self {
+        let cells = vec![TString::new("".to_string())];
+        let rows = vec![cells];
+        self.rows = rows;
+        self
+    }
+
+    pub fn render(&mut self) -> &mut Self {
         for row in &self.rows {
             let mut rowView = String::new();
             for cell in row {
@@ -64,5 +71,6 @@ impl TerminalTableRenderer {
             }
             println!("{}", rowView);
         }
+        self
     }
 }
