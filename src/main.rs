@@ -10,7 +10,6 @@ mod tstring;
 mod library {
     pub mod json;
     pub mod math;
-    pub mod print;
 }
 
 use todo::Todo;
