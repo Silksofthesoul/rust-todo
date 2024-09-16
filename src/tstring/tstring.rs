@@ -17,7 +17,7 @@ pub struct TString {
 
 static SYMBOLS: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| {
     let mut map = HashMap::new();
-    map.insert("space", "*");
+    map.insert("space", " ");
     map.insert("tab", "\t");
     map.insert("enter", "\n");
     map.insert("vspace", map.get("enter").unwrap());
@@ -109,7 +109,7 @@ impl TString {
     }
 
     pub fn getLength(&self) -> usize {
-        self.text.len()
+        self.text.chars().count()
     }
     pub fn getText(&self) -> String {
         self.text.clone()
