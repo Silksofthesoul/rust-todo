@@ -116,12 +116,12 @@ impl Todo {
     pub fn setPropery(&mut self, key: String, params: Vec<String>) -> &mut Self {
         let value: String = params.get(1).unwrap().to_string();
         self.properties.insert(key.clone(), value.clone());
-        println!("----{}: {}--------", key.clone(), value.clone());
         self
     }
 
-    pub fn getPropery(&self, key: String) {
+    pub fn showPropery(&mut self, key: String) {
         //let val = self.properties.get(&key.clone()).unwrap().to_string();
+        let renderer = &mut self.renderer;
         let undefined = String::from("undefined");
         let mut isNotExist = false;
         let val = self
@@ -132,10 +132,17 @@ impl Todo {
                 isNotExist = true;
                 undefined.clone()
             });
+        let mut tsProps: TString = TString::new(String::from("properties"));
+        tsProps.setAnsi(TStringStatic::getForeground("lightGray"));
+        let mut tsValue: TString = TString::new(String::from("value"));
+        tsValue.setAnsi(TStringStatic::getForeground("lightGray"));
         if val.clone() == undefined.clone() {
-            println!("properties: ");
             for (key, value) in &self.properties {
-                println!("{}: {}", key, value);
+                let mut tsKey: TString = TString::new(format!("{}{}", key.clone(), ":"));
+                tsKey.setAnsi(TStringStatic::getForeground("white"));
+                let mut tsVal: TString = TString::new(value.clone());
+                tsVal.setAnsi(TStringStatic::getForeground("yellow"));
+                renderer.setRow(vec![tsKey.clone(), tsVal.clone()]);
             }
         } else {
             let displayKey = (|| {
@@ -145,8 +152,18 @@ impl Todo {
                     key.clone().to_string()
                 }
             })();
-            println!("{}: {}", displayKey, val);
+            let mut tsKey: TString = TString::new(format!("{}{}", displayKey.clone(), ":"));
+            tsKey.setAnsi(TStringStatic::getForeground("white"));
+            let mut tsVal: TString = TString::new(val.clone());
+            tsVal.setAnsi(TStringStatic::getForeground("yellow"));
+            renderer.setRow(vec![tsKey.clone(), tsVal.clone()]);
         }
+
+        renderer
+            .setHeader(vec![tsProps.clone(), tsValue.clone()])
+            .adaptColumnLengths()
+            .render()
+            .flush();
     }
 
     pub fn addTask(&mut self, title: &str) -> &mut Self {
@@ -370,7 +387,6 @@ impl Todo {
         match scannerRef.command.as_str() {
             "log" => self.show(),
             "show" => self.show(),
-            //"show2" => self.show2(),
             "ls" => self.show(),
             "add" => self
                 .addTask(scannerRef.param.clone().as_str())
@@ -392,7 +408,7 @@ impl Todo {
                 .sync()
                 .show(),
             "config" => {
-                self.getPropery(scannerRef.param.clone().to_string());
+                self.showPropery(scannerRef.param.clone().to_string());
                 self
             }
             "set" => {
@@ -401,7 +417,7 @@ impl Todo {
                     scannerRef.params.clone(),
                 )
                 .sync()
-                .show();
+                .showPropery("".to_string());
                 self
             }
             "help" => {
