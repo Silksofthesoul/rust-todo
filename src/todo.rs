@@ -440,26 +440,27 @@ impl Todo {
             TString::new(String::from("Show this help")),
             TString::new(String::from("?")),
         ]);
+
+        renderer.setRow(vec![
+            TString::new(String::from("version")),
+            TString::new(String::from("Show version")),
+            TString::new(String::from("v")),
+        ]);
+
         renderer.adaptColumnLengths().render();
         self
     }
 
     pub fn showVersion(&mut self) -> &mut Self {
-        println!("{}", env!("CARGO_PKG_VERSION"));
-        //let mut renderer = &mut self.renderer;
-        //let mut tsCommand = TString::new(String::from("Version"));
-        //let mut tsDescr = TString::new(String::from("Description"));
-        //let mut tsAliases = TString::new(String::from("Aliases"));
-        //tsCommand.setAnsi(TStringStatic::getForeground("lightGray"));
-        //tsDescr.setAnsi(TStringStatic::getForeground("lightGray"));
-        //tsAliases.setAnsi(TStringStatic::getForeground("lightGray"));
-        //renderer.setHeader(vec![tsCommand.clone(), tsDescr.clone(), tsAliases.clone()]);
-        //renderer.setRow(vec![
-        //    TString::new(String::from(env!("CARGO_PKG_VERSION"))),
-        //    TString::new(String::from("Show version")),
-        //    TString::new(String::from("")),
-        //]);
-        //renderer.adaptColumnLengths().render();
+        let mut renderer = &mut self.renderer;
+        let mut c1 = TString::new(String::from(""));
+        let mut c2 = TString::new(String::from(""));
+        renderer.setHeader(vec![c1.clone(), c2.clone()]);
+        renderer.setRow(vec![
+            TString::new(String::from("ToDo:")),
+            TString::new(String::from(env!("CARGO_PKG_VERSION"))),
+        ]);
+        renderer.adaptColumnLengths().render();
         self
     }
 
@@ -541,6 +542,7 @@ impl Todo {
                 self
             }
             "version" => self.showVersion(),
+            "v" => self.showVersion(),
             &_ => self.show(),
         }
     }
