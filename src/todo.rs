@@ -1,5 +1,6 @@
 #![allow(non_snake_case)]
 
+use chrono::{DateTime, Local};
 use std::collections::HashMap;
 
 use crate::fileWorker::FileWorker;
@@ -113,14 +114,63 @@ impl Todo {
         parsed.unwrap().items
     }
 
-    pub fn setPropery(&mut self, key: String, params: Vec<String>) -> &mut Self {
+    pub fn setPropery(
+        &mut self,
+        key: String,
+        params: Vec<String>,
+        skipMarkIsEdited: bool,
+    ) -> &mut Self {
         let value: String = params.get(1).unwrap().to_string();
         self.properties.insert(key.clone(), value.clone());
+        if skipMarkIsEdited == false {
+            self.setupLastEdited();
+        }
         self
     }
 
-    pub fn showPropery(&mut self, key: String) {
-        //let val = self.properties.get(&key.clone()).unwrap().to_string();
+    pub fn unsetProperty(&mut self, key: String) -> &mut Self {
+        let mut isNotExist = false;
+        let renderer = &mut self.renderer;
+        let undefined = String::from("undefined");
+        let val = self
+            .properties
+            .get(&key.clone().to_string())
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| {
+                isNotExist = true;
+                undefined.clone()
+            });
+        let mut tsProps: TString = TString::new(String::from("properties"));
+        tsProps.setAnsi(TStringStatic::getForeground("lightGray"));
+        let mut tsValue: TString = TString::new(String::from("value"));
+        tsValue.setAnsi(TStringStatic::getForeground("lightGray"));
+
+        let mut tsKey: TString = TString::new(format!("{}{}", key.clone(), ":"));
+        tsKey.setAnsi(TStringStatic::getForeground("white"));
+        let mut tsVal: TString = TString::new(val.clone());
+        tsVal.setAnsi(TStringStatic::getForeground("yellow"));
+
+        if isNotExist {
+            println!("\nThe key \"{}\" was is not found", &key);
+            print!("\n\n");
+        } else {
+            println!("\nThe next item is deleted:");
+
+            renderer
+                .setHeader(vec![tsProps.clone(), tsValue.clone()])
+                .setRow(vec![tsKey.clone(), tsVal.clone()])
+                .adaptColumnLengths()
+                .render()
+                .flush();
+            println!("\n\n");
+            self.properties.remove(&key);
+            self.setupLastEdited();
+        }
+
+        self
+    }
+
+    pub fn showProperty(&mut self, key: String) -> &mut Self {
         let renderer = &mut self.renderer;
         let undefined = String::from("undefined");
         let mut isNotExist = false;
@@ -164,39 +214,67 @@ impl Todo {
             .adaptColumnLengths()
             .render()
             .flush();
+        self
     }
 
     pub fn addTask(&mut self, title: &str) -> &mut Self {
+        let now: DateTime<Local> = Local::now();
+        let created: String = now.format("%Y-%m-%d %H:%M:%S").to_string();
         let todoItem = TodoItem {
             status: false,
             title: String::from(title),
-            created: String::from("0"),
+            created,
             ended: String::from(""),
             params: HashMap::new(),
         };
         self.items.push(todoItem);
+        self.setupLastEdited();
         self
     }
 
-    pub fn done(&mut self, index: usize) -> &mut Self {
-        let mut isOverflow = false;
-        if index > self.items.len() {
-            isOverflow = true;
-        }
-        if !isOverflow {
-            self.items[index].status = true;
-        }
+    pub fn setupLastEdited(&mut self) -> &mut Self {
+        let now: DateTime<Local> = Local::now();
+        let edited: String = now.format("%Y-%m-%d %H:%M:%S").to_string();
+        self.setPropery("updated".to_string(), vec!["".to_string(), edited], true);
         self
     }
 
-    pub fn undone(&mut self, index: usize) -> &mut Self {
-        let mut isOverflow = false;
-        if index > self.items.len() {
-            isOverflow = true;
+    pub fn done(&mut self, indexes: Vec<String>) -> &mut Self {
+        let mut isEdited = false;
+        for index in indexes {
+            let indexVal: usize = index.parse().unwrap();
+            if indexVal > self.items.len() {
+                println!("index out of range");
+                continue;
+            } else {
+                self.items[indexVal].status = true;
+                isEdited = true;
+            }
         }
-        if !isOverflow {
-            self.items[index].status = false;
+
+        if isEdited {
+            self.setupLastEdited();
         }
+
+        self
+    }
+
+    pub fn undone(&mut self, indexes: Vec<String>) -> &mut Self {
+        let mut isEdited = false;
+        for index in indexes {
+            let indexVal: usize = index.parse().unwrap();
+            if indexVal > self.items.len() {
+                println!("index out of range");
+                continue;
+            } else {
+                self.items[indexVal].status = false;
+                isEdited = true;
+            }
+        }
+        if isEdited {
+            self.setupLastEdited();
+        }
+
         self
     }
     pub fn show(&mut self) -> &mut Self {
@@ -305,60 +383,89 @@ impl Todo {
 
     pub fn help(&mut self) -> &mut Self {
         let mut renderer = &mut self.renderer;
-        renderer.setHeader(vec![
-            TString::new(String::from("Command")),
-            TString::new(String::from("Description")),
-        ]);
-        renderer.setRow(vec![
-            TString::new(String::from("log")),
-            TString::new(String::from("Show all tasks")),
-        ]);
-        renderer.setRow(vec![
-            TString::new(String::from("show")),
-            TString::new(String::from("Show all tasks")),
-        ]);
+        let mut tsCommand = TString::new(String::from("Command"));
+        let mut tsDescr = TString::new(String::from("Description"));
+        let mut tsAliases = TString::new(String::from("Aliases"));
+        tsCommand.setAnsi(TStringStatic::getForeground("lightGray"));
+        tsDescr.setAnsi(TStringStatic::getForeground("lightGray"));
+        tsAliases.setAnsi(TStringStatic::getForeground("lightGray"));
+        renderer.setHeader(vec![tsCommand.clone(), tsDescr.clone(), tsAliases.clone()]);
         renderer.setRow(vec![
             TString::new(String::from("ls")),
             TString::new(String::from("Show all tasks")),
+            TString::new(String::from("log, show, list")),
         ]);
         renderer.setRow(vec![
             TString::new(String::from("add")),
             TString::new(String::from("Add a task")),
+            TString::new(String::from("")),
         ]);
         renderer.setRow(vec![
-            TString::new(String::from("rm or delete or del")),
+            TString::new(String::from("rm")),
             TString::new(String::from("Delete a task")),
+            TString::new(String::from("delete, del")),
         ]);
         renderer.setRow(vec![
             TString::new(String::from("push")),
             TString::new(String::from("Add a task")),
+            TString::new(String::from("")),
         ]);
         renderer.setRow(vec![
             TString::new(String::from("done")),
             TString::new(String::from("Mark a task as done")),
+            TString::new(String::from("")),
         ]);
         renderer.setRow(vec![
             TString::new(String::from("undone")),
             TString::new(String::from("Mark a task as undone")),
+            TString::new(String::from("")),
         ]);
         renderer.setRow(vec![
             TString::new(String::from("config")),
             TString::new(String::from("Show a property")),
+            TString::new(String::from("")),
         ]);
         renderer.setRow(vec![
             TString::new(String::from("set")),
             TString::new(String::from("Set a property")),
+            TString::new(String::from("")),
+        ]);
+        renderer.setRow(vec![
+            TString::new(String::from("unset")),
+            TString::new(String::from("Unset a property")),
+            TString::new(String::from("")),
         ]);
         renderer.setRow(vec![
             TString::new(String::from("help")),
             TString::new(String::from("Show this help")),
+            TString::new(String::from("?")),
         ]);
         renderer.adaptColumnLengths().render();
         self
     }
 
+    pub fn showVersion(&mut self) -> &mut Self {
+        println!("{}", env!("CARGO_PKG_VERSION"));
+        //let mut renderer = &mut self.renderer;
+        //let mut tsCommand = TString::new(String::from("Version"));
+        //let mut tsDescr = TString::new(String::from("Description"));
+        //let mut tsAliases = TString::new(String::from("Aliases"));
+        //tsCommand.setAnsi(TStringStatic::getForeground("lightGray"));
+        //tsDescr.setAnsi(TStringStatic::getForeground("lightGray"));
+        //tsAliases.setAnsi(TStringStatic::getForeground("lightGray"));
+        //renderer.setHeader(vec![tsCommand.clone(), tsDescr.clone(), tsAliases.clone()]);
+        //renderer.setRow(vec![
+        //    TString::new(String::from(env!("CARGO_PKG_VERSION"))),
+        //    TString::new(String::from("Show version")),
+        //    TString::new(String::from("")),
+        //]);
+        //renderer.adaptColumnLengths().render();
+        self
+    }
+
     pub fn rmTaskByIndex(&mut self, indexes: Vec<String>) -> &mut Self {
         let mut vi32ItemsForDelete: Vec<i32> = Vec::new();
+        let mut isEdited = false;
         for index in indexes {
             let indexVal: usize = index.parse().unwrap();
             if indexVal > self.items.len() {
@@ -370,8 +477,13 @@ impl Todo {
                 item.params
                     .insert(String::from("deleted"), String::from("true"));
                 self.items[indexVal] = item;
+                isEdited = true;
             }
         }
+        if isEdited {
+            self.setupLastEdited();
+        }
+
         println!("\nThe next items is deleted:");
         self.setTodoIndexes(vi32ItemsForDelete)
             .show()
@@ -386,6 +498,7 @@ impl Todo {
         let scannerRef = &self.scanner;
         match scannerRef.command.as_str() {
             "log" => self.show(),
+            "list" => self.show(),
             "show" => self.show(),
             "ls" => self.show(),
             "add" => self
@@ -399,31 +512,35 @@ impl Todo {
                 .addTask(scannerRef.param.clone().as_str())
                 .sync()
                 .show(),
-            "done" => self
-                .done(scannerRef.param.clone().parse().unwrap())
-                .sync()
-                .show(),
-            "undone" => self
-                .undone(scannerRef.param.clone().parse().unwrap())
-                .sync()
-                .show(),
+            "done" => self.done(scannerRef.params.clone()).sync().show(),
+            "undone" => self.undone(scannerRef.params.clone()).sync().show(),
             "config" => {
-                self.showPropery(scannerRef.param.clone().to_string());
+                self.showProperty(scannerRef.param.clone().to_string());
                 self
             }
+            "unset" => self
+                .unsetProperty(scannerRef.param.clone().to_string())
+                .sync()
+                .showProperty("".to_string()),
             "set" => {
                 self.setPropery(
                     scannerRef.param.clone().to_string(),
                     scannerRef.params.clone(),
+                    false,
                 )
                 .sync()
-                .showPropery("".to_string());
+                .showProperty("".to_string());
                 self
             }
             "help" => {
                 self.help();
                 self
             }
+            "?" => {
+                self.help();
+                self
+            }
+            "version" => self.showVersion(),
             &_ => self.show(),
         }
     }
