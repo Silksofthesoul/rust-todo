@@ -5,6 +5,7 @@ use std::collections::HashMap;
 
 use crate::fileWorker::FileWorker;
 use crate::library::json::{parse, stringify};
+use crate::markdownrender::markdownrender::MarkdownRender;
 use crate::scanner::Scanner;
 use crate::settings::Settings;
 use crate::terminaltablerenderer::terminaltablerenderer::{
@@ -22,11 +23,11 @@ use serde_json::Value;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TodoItem {
-    status: bool,
-    title: String,
-    created: String,
-    ended: String,
-    params: HashMap<String, String>,
+    pub status: bool,
+    pub title: String,
+    pub created: String,
+    pub ended: String,
+    pub params: HashMap<String, String>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -48,6 +49,8 @@ pub struct Todo {
     #[serde(skip_serializing, skip_deserializing)]
     renderer: TTR,
     #[serde(skip_serializing, skip_deserializing)]
+    markdownRender: MarkdownRender,
+    #[serde(skip_serializing, skip_deserializing)]
     todoMode: i32, // 0: show all, 1: show done, 2: show undone
     #[serde(skip_serializing, skip_deserializing)]
     todoIndexes: Vec<i32>, // -1: show all / default, value greater then -1 -- items for show
@@ -56,6 +59,7 @@ pub struct Todo {
 impl Todo {
     pub fn new() -> Todo {
         let renderer = TTR::new();
+        let markdownRender = MarkdownRender::new();
         let scanner = Scanner::new();
         let settings = Settings::new();
         let fileWorker = FileWorker::new();
@@ -79,6 +83,7 @@ impl Todo {
             settings,
             scanner,
             renderer,
+            markdownRender,
             todoMode: 0,
             todoIndexes: vec![-1],
         }
@@ -170,6 +175,19 @@ impl Todo {
         self
     }
 
+    pub fn getProperties(&mut self) -> HashMap<String, String> {
+        self.properties.clone()
+    }
+    pub fn getProperty(&mut self, key: String) -> String {
+        let undefined = String::from("");
+        let val = self
+            .properties
+            .get(&key.clone().to_string())
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| undefined.clone());
+        val
+    }
+
     pub fn showProperty(&mut self, key: String) -> &mut Self {
         let renderer = &mut self.renderer;
         let undefined = String::from("undefined");
@@ -215,6 +233,10 @@ impl Todo {
             .render()
             .flush();
         self
+    }
+
+    pub fn getItems(&mut self) -> Vec<TodoItem> {
+        self.items.clone()
     }
 
     pub fn addTask(&mut self, title: &str) -> &mut Self {
@@ -464,6 +486,13 @@ impl Todo {
         self
     }
 
+    pub fn md(&mut self) -> &mut Self {
+        let selfRef = &mut self;
+        let str: String = self.markdownRender.todoToMarkdown(selfRef);
+        println!("{}", str);
+        self
+    }
+
     pub fn rmTaskByIndex(&mut self, indexes: Vec<String>) -> &mut Self {
         let mut vi32ItemsForDelete: Vec<i32> = Vec::new();
         let mut isEdited = false;
@@ -535,6 +564,10 @@ impl Todo {
             }
             "help" => {
                 self.help();
+                self
+            }
+            "md" => {
+                self.md();
                 self
             }
             "?" => {

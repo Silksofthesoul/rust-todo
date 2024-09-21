@@ -1,6 +1,7 @@
 #![allow(non_snake_case)]
 
 mod fileWorker;
+mod markdownrender;
 mod scanner;
 mod settings;
 mod terminaltablerenderer;
