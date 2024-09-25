@@ -8,18 +8,12 @@ use crate::library::json::{parse, stringify};
 use crate::markdownrender::markdownrender::MarkdownRender;
 use crate::scanner::Scanner;
 use crate::settings::Settings;
-use crate::terminaltablerenderer::terminaltablerenderer::{
-    TerminalTableRenderer as TTR, TerminalTableRenderer,
-};
+use crate::terminaltablerenderer::terminaltablerenderer::TerminalTableRenderer as TTR;
 use crate::tstring::tstring::{TString, TString as TStringStatic};
 
-// use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json;
 use serde_json::Result;
-use serde_json::Value;
-// use std::collections::HashMap;
-// use std::vec::Vec;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TodoItem {
@@ -59,7 +53,6 @@ pub struct Todo {
 impl Todo {
     pub fn new() -> Todo {
         let renderer = TTR::new();
-        let markdownRender = MarkdownRender::new();
         let scanner = Scanner::new();
         let settings = Settings::new();
         let fileWorker = FileWorker::new();
@@ -71,6 +64,8 @@ impl Todo {
             .template(String::from("emptyDB"))
             .unwrap()
             .to_string();
+
+        let markdownRender = MarkdownRender::new("todo.md");
 
         let content = fileWorker
             .fileToString(fileNameDB.clone(), tmplEmpty.clone())
@@ -487,9 +482,11 @@ impl Todo {
     }
 
     pub fn md(&mut self) -> &mut Self {
-        let selfRef = &mut self;
-        let str: String = self.markdownRender.todoToMarkdown(selfRef);
-        println!("{}", str);
+        let mdRef = &mut self.markdownRender;
+        let properties = self.properties.clone();
+        let items = self.items.clone();
+        let strval: String = (mdRef.todoToMarkdown(properties, items)).to_string();
+        println!("{}", strval);
         self
     }
 
