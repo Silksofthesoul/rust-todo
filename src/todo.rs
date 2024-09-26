@@ -65,7 +65,7 @@ impl Todo {
             .unwrap()
             .to_string();
 
-        let markdownRender = MarkdownRender::new("todo.md");
+        let markdownRender = MarkdownRender::new();
 
         let content = fileWorker
             .fileToString(fileNameDB.clone(), tmplEmpty.clone())
@@ -481,12 +481,49 @@ impl Todo {
         self
     }
 
-    pub fn md(&mut self) -> &mut Self {
+    pub fn getMd(&mut self, isToHtml: bool) -> String {
         let mdRef = &mut self.markdownRender;
         let properties = self.properties.clone();
         let items = self.items.clone();
-        let strval: String = (mdRef.todoToMarkdown(properties, items)).to_string();
-        println!("{}", strval);
+        let strval: String = (mdRef.todoToMarkdown(properties, items, isToHtml)).to_string();
+        strval
+    }
+
+    pub fn getHtml(&mut self) -> String {
+        let markdownString: &String = &self.getMd(true);
+        let mut strval: String = String::from("");
+        {
+            let mdRef = &mut self.markdownRender;
+            strval = mdRef.mdToHtml(markdownString.as_str().to_string());
+        }
+        strval
+    }
+
+    pub fn saveMd(&mut self) -> &mut Self {
+        let markdownString: String = self.getMd(false);
+        let settings = &self.settings;
+        let mdFile: String = settings.get(String::from("mdFile")).unwrap().to_string();
+        self.fileWorker.write(mdFile, markdownString).unwrap();
+        self
+    }
+
+    pub fn saveHtml(&mut self) -> &mut Self {
+        let htmlString: String = self.getHtml();
+        let settings = &self.settings;
+        let htmlTemplate: String = settings
+            .template(String::from("todoHTML"))
+            .unwrap()
+            .to_string();
+        let cssStyles: String = settings
+            .template(String::from("cssStyles"))
+            .unwrap()
+            .to_string();
+        let htmlFile: String = settings.get(String::from("htmlFile")).unwrap().to_string();
+        let title = self.getProperty("title".to_string());
+        let mut htmlRes = htmlTemplate.replace("%title%", title.as_str());
+        htmlRes = htmlRes.replace("%content%", htmlString.as_str());
+        htmlRes = htmlRes.replace("%style%", cssStyles.as_str());
+        self.fileWorker.write(htmlFile, htmlRes).unwrap();
         self
     }
 
@@ -564,7 +601,11 @@ impl Todo {
                 self
             }
             "md" => {
-                self.md();
+                self.saveMd();
+                self
+            }
+            "html" => {
+                self.saveHtml();
                 self
             }
             "?" => {
