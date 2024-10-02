@@ -21,6 +21,7 @@ pub struct TodoItem {
     pub title: String,
     pub created: String,
     pub ended: String,
+    pub edited: String,
     pub params: HashMap<String, String>,
 }
 
@@ -66,9 +67,13 @@ impl Todo {
             .to_string();
 
         let markdownRender = MarkdownRender::new();
+        let now: DateTime<Local> = Local::now();
+        let nowStr = now.format("%Y-%m-%d %H:%M:%S").to_string();
+        let mut tmpl = tmplEmpty.clone();
+        tmpl = tmpl.replace("%now%", nowStr.as_str());
 
         let content = fileWorker
-            .fileToString(fileNameDB.clone(), tmplEmpty.clone())
+            .fileToString(fileNameDB.clone(), tmpl.clone())
             .unwrap();
 
         Todo {
@@ -242,6 +247,7 @@ impl Todo {
             title: String::from(title),
             created,
             ended: String::from(""),
+            edited: String::from(""),
             params: HashMap::new(),
         };
         self.items.push(todoItem);
@@ -264,8 +270,10 @@ impl Todo {
                 println!("index out of range");
                 continue;
             } else {
+                let now: DateTime<Local> = Local::now();
                 self.items[indexVal].status = true;
-                isEdited = true;
+                self.items[indexVal].ended = now.format("%Y-%m-%d %H:%M:%S").to_string();
+                self.items[indexVal].edited = now.format("%Y-%m-%d %H:%M:%S").to_string();
             }
         }
 
@@ -284,7 +292,10 @@ impl Todo {
                 println!("index out of range");
                 continue;
             } else {
+                let now: DateTime<Local> = Local::now();
                 self.items[indexVal].status = false;
+                self.items[indexVal].ended = String::from("");
+                self.items[indexVal].edited = now.format("%Y-%m-%d %H:%M:%S").to_string();
                 isEdited = true;
             }
         }
@@ -300,13 +311,25 @@ impl Todo {
         let mut titleNumber = TString::new(String::from("#"));
         titleNumber.setAnsi(TStringStatic::getForeground("lightGray"));
 
-        renderer.setHeader(vec![
+        let mut headerVec = vec![
             titleNumber,
             TString::new(String::from("Status")),
             TString::new(String::from("Title")),
             TString::new(String::from("Created")),
+            TString::new(String::from("Edited")),
             TString::new(String::from("Ended")),
-        ]);
+        ];
+
+        let excludedColumns = &self
+            .properties
+            .get("excludedColumns")
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| String::from(""));
+
+        let excludedColumns: Vec<&str> = excludedColumns.split(",").collect();
+        headerVec.retain(|item| !excludedColumns.contains(&item.getText().as_str()));
+
+        renderer.setHeader(headerVec.clone());
 
         if self.todoIndexes.contains(&(-1 as i32)) {
             for (index, val) in items.iter().enumerate() {
@@ -329,7 +352,47 @@ impl Todo {
                 };
                 let created = TString::new(val.created.to_string());
                 let ended = TString::new(val.ended.to_string());
-                renderer.setRow(vec![number.clone(), status, title, created, ended]);
+                let edited = TString::new(val.edited.to_string());
+
+                let mut row = vec![];
+                if headerVec
+                    .iter()
+                    .any(|item| item.getText() == "Number".to_string())
+                {
+                    row.push(number.clone());
+                }
+                if headerVec
+                    .iter()
+                    .any(|item| item.getText() == "Status".to_string())
+                {
+                    row.push(status);
+                }
+                if headerVec
+                    .iter()
+                    .any(|item| item.getText() == "Title".to_string())
+                {
+                    row.push(title);
+                }
+                if headerVec
+                    .iter()
+                    .any(|item| item.getText() == "Created".to_string())
+                {
+                    row.push(created);
+                }
+                if headerVec
+                    .iter()
+                    .any(|item| item.getText() == "Edited".to_string())
+                {
+                    row.push(edited);
+                }
+                if headerVec
+                    .iter()
+                    .any(|item| item.getText() == "Ended".to_string())
+                {
+                    row.push(ended);
+                }
+                println!("11{:?}", row);
+                renderer.setRow(row);
             }
         } else {
             for (index, val) in items.iter().enumerate() {
@@ -353,7 +416,46 @@ impl Todo {
                         };
                         let created = TString::new(val.created.to_string());
                         let ended = TString::new(val.ended.to_string());
-                        renderer.setRow(vec![number.clone(), status, title, created, ended]);
+                        let edited = TString::new(val.edited.to_string());
+                        let mut row = vec![];
+                        if headerVec
+                            .iter()
+                            .any(|item| item.getText() == "Number".to_string())
+                        {
+                            row.push(number.clone());
+                        }
+                        if headerVec
+                            .iter()
+                            .any(|item| item.getText() == "Status".to_string())
+                        {
+                            row.push(status);
+                        }
+                        if headerVec
+                            .iter()
+                            .any(|item| item.getText() == "Title".to_string())
+                        {
+                            row.push(title);
+                        }
+                        if headerVec
+                            .iter()
+                            .any(|item| item.getText() == "Created".to_string())
+                        {
+                            row.push(created);
+                        }
+                        if headerVec
+                            .iter()
+                            .any(|item| item.getText() == "Edited".to_string())
+                        {
+                            row.push(edited);
+                        }
+                        if headerVec
+                            .iter()
+                            .any(|item| item.getText() == "Ended".to_string())
+                        {
+                            row.push(ended);
+                        }
+                        println!("22{:?}", row);
+                        renderer.setRow(row);
                     }
                     false => {
                         continue;
@@ -462,6 +564,18 @@ impl Todo {
             TString::new(String::from("version")),
             TString::new(String::from("Show version")),
             TString::new(String::from("v")),
+        ]);
+
+        renderer.setRow(vec![
+            TString::new(String::from("md")),
+            TString::new(String::from("Save markdown file")),
+            TString::new(String::from("")),
+        ]);
+
+        renderer.setRow(vec![
+            TString::new(String::from("html")),
+            TString::new(String::from("Save html file")),
+            TString::new(String::from("")),
         ]);
 
         renderer.adaptColumnLengths().render();
