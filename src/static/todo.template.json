@@ -1,6 +1,7 @@
 {
   "properties": {
-    "title": "ToDo"
+    "title": "ToDo",
+    "created": "%now%"
   },
   "items": []
 }
