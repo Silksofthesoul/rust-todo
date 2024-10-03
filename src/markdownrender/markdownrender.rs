@@ -20,6 +20,12 @@ impl MarkdownRender {
         let mut properties = String::from("");
         let mut items = String::from("");
 
+        let excludedColumns = todoProperties
+            .get("excludedColumns")
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| String::from(""));
+        let excludedColumns: Vec<&str> = excludedColumns.split(",").collect();
+
         /* properties: */
         let yamlProperties = serde_yaml::to_string(&todoProperties).unwrap();
 
@@ -44,25 +50,24 @@ impl MarkdownRender {
         }
 
         /* items: */
-        //items.push_str("## Items\n");
-        //items.push_str("\n");
-        //    for item in todoItems {
-        //        let status = item.status;
-        //        let checkbox = if status { "[x]" } else { "[ ]" };
-        //        let title = item.title;
-        //        let created = item.created;
-        //        let ended = item.ended;
-        //        items.push_str(&format!(
-        //            "- {} {} | {} - {}\n",
-        //            checkbox, title, created, ended
-        //        ));
-        //    }
-
-        /* items: */
         items.push_str("## Items\n");
         items.push_str("\n");
-        items.push_str("| Status | Title | Created | Ended |\n");
-        items.push_str("| --- | --- | --- | --- |\n");
+
+        let mut vecColumns = vec!["Status", "Title", "Created", "Edited", "Ended"];
+        vecColumns.retain(|item| !excludedColumns.contains(&item));
+
+        let mut strColumns = String::from("|");
+        let mut strUnderColumns = String::from("|");
+        for column in &vecColumns {
+            strColumns.push_str(&format!(" {} |", column));
+            strUnderColumns.push_str(&format!("--- |"));
+        }
+        strColumns.push_str("\n");
+        strUnderColumns.push_str("\n");
+
+        items.push_str(strColumns.as_str());
+        items.push_str(strUnderColumns.as_str());
+
         for item in todoItems {
             let status = item.status;
             let mut checkbox = "";
@@ -75,17 +80,37 @@ impl MarkdownRender {
             } else {
                 checkbox = if status { "[x]" } else { "[ ]" };
             }
+
             let title = item.title;
             let created = item.created;
             let ended = item.ended;
-            items.push_str(&format!(
-                "| {} | {} | {} | {} |\n",
-                checkbox, title, created, ended
-            ));
-            //items.push_str(&format!(
-            //    "- {} {} | {} - {}\n",
-            //    checkbox, title, created, ended
-            //));
+            let mut row: Vec<String> = Vec::new();
+            let mut strRow = String::from("|");
+
+            if vecColumns.contains(&"#") {
+                row.push(checkbox.to_string());
+            }
+            if vecColumns.contains(&"Status") {
+                row.push(checkbox.to_string());
+            }
+            if vecColumns.contains(&"Title") {
+                row.push(title.to_string());
+            }
+            if vecColumns.contains(&"Created") {
+                row.push(created.to_string());
+            }
+            if vecColumns.contains(&"Edited") {
+                row.push(created.to_string());
+            }
+            if vecColumns.contains(&"Ended") {
+                row.push(ended.to_string());
+            }
+
+            for column in row {
+                strRow.push_str(&format!(" {} |", column));
+            }
+            strRow.push_str("\n");
+            items.push_str(strRow.as_str());
         }
 
         markdown.push_str(&items);

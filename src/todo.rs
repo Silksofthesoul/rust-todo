@@ -315,6 +315,7 @@ impl Todo {
 
         self
     }
+
     pub fn show(&mut self) -> &mut Self {
         let renderer = &mut self.renderer;
         let items = &self.items;
@@ -367,7 +368,7 @@ impl Todo {
                 let mut row = vec![];
                 if headerVec
                     .iter()
-                    .any(|item| item.getText() == "Number".to_string())
+                    .any(|item| item.getText() == "#".to_string())
                 {
                     row.push(number.clone());
                 }
@@ -401,7 +402,6 @@ impl Todo {
                 {
                     row.push(ended);
                 }
-                println!("11{:?}", row);
                 renderer.setRow(row);
             }
         } else {
@@ -430,7 +430,7 @@ impl Todo {
                         let mut row = vec![];
                         if headerVec
                             .iter()
-                            .any(|item| item.getText() == "Number".to_string())
+                            .any(|item| item.getText() == "#".to_string())
                         {
                             row.push(number.clone());
                         }
@@ -464,7 +464,6 @@ impl Todo {
                         {
                             row.push(ended);
                         }
-                        println!("22{:?}", row);
                         renderer.setRow(row);
                     }
                     false => {
