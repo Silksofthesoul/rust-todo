@@ -133,6 +133,16 @@ impl Todo {
         self
     }
 
+    pub fn remPropery(&mut self, key: String, skipMarkIsEdited: bool) -> &mut Self {
+        if self.properties.contains_key(&key.clone().to_string()) {
+            self.properties.remove(&key.clone().to_string());
+        }
+        if skipMarkIsEdited == false {
+            self.setupLastEdited();
+        }
+        self
+    }
+
     pub fn unsetProperty(&mut self, key: String) -> &mut Self {
         let mut isNotExist = false;
         let renderer = &mut self.renderer;
@@ -552,7 +562,7 @@ impl Todo {
         renderer.setRow(vec![
             TString::new(String::from("unset")),
             TString::new(String::from("Unset a property")),
-            TString::new(String::from("")),
+            TString::new(String::from("rem")),
         ]);
         renderer.setRow(vec![
             TString::new(String::from("help")),
@@ -708,6 +718,12 @@ impl Todo {
                 )
                 .sync()
                 .showProperty("".to_string());
+                self
+            }
+            "rem" => {
+                self.remPropery(scannerRef.param.clone().to_string(), false)
+                    .sync()
+                    .showProperty("".to_string());
                 self
             }
             "help" => {
