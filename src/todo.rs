@@ -514,75 +514,123 @@ impl Todo {
         let mut tsCommand = TString::new(String::from("Command"));
         let mut tsDescr = TString::new(String::from("Description"));
         let mut tsAliases = TString::new(String::from("Aliases"));
+
+        let settings = &self.settings;
+        let name = settings.get(String::from("app-name")).unwrap().to_string();
+        let version = settings
+            .get(String::from("app-version"))
+            .unwrap()
+            .to_string();
+        let mut description = settings
+            .get(String::from("description"))
+            .unwrap()
+            .to_string();
+        description = description.replace("%APP-NAME%", name.as_str());
+        description = description.replace("%APP-VER%", version.as_str());
+        println!("\n\n{}\n", description);
+
         tsCommand.setAnsi(TStringStatic::getForeground("lightGray"));
         tsDescr.setAnsi(TStringStatic::getForeground("lightGray"));
         tsAliases.setAnsi(TStringStatic::getForeground("lightGray"));
         renderer.setHeader(vec![tsCommand.clone(), tsDescr.clone(), tsAliases.clone()]);
+
+        let mut cmInit = TString::new(String::from("init"));
+        cmInit.setAnsi(TStringStatic::getForeground("lightGreen"));
         renderer.setRow(vec![
-            TString::new(String::from("ls")),
-            TString::new(String::from("Show all tasks")),
-            TString::new(String::from("log, show, list")),
+            cmInit.clone(),
+            TString::new(String::from("Init your todo, or show all tasks")),
+            TString::new(String::from("log, show, list, ls")),
         ]);
+        let mut cmLs = TString::new(String::from("ls"));
+        cmLs.setAnsi(TStringStatic::getForeground("lightGreen"));
         renderer.setRow(vec![
-            TString::new(String::from("add")),
+            cmLs.clone(),
+            TString::new(String::from("Show all tasks")),
+            TString::new(String::from("log, show, list, init")),
+        ]);
+        let mut cmAdd = TString::new(String::from("add"));
+        cmAdd.setAnsi(TStringStatic::getForeground("lightGreen"));
+        renderer.setRow(vec![
+            cmAdd.clone(),
             TString::new(String::from("Add a task")),
             TString::new(String::from("")),
         ]);
+        let mut cmRm = TString::new(String::from("rm"));
+        cmRm.setAnsi(TStringStatic::getForeground("lightGreen"));
         renderer.setRow(vec![
-            TString::new(String::from("rm")),
+            cmRm.clone(),
             TString::new(String::from("Delete a task")),
             TString::new(String::from("delete, del")),
         ]);
+        let mut cmPush = TString::new(String::from("push"));
+        cmPush.setAnsi(TStringStatic::getForeground("lightGreen"));
         renderer.setRow(vec![
-            TString::new(String::from("push")),
+            cmPush.clone(),
             TString::new(String::from("Add a task")),
             TString::new(String::from("")),
         ]);
+        let mut cmDone = TString::new(String::from("done"));
+        cmDone.setAnsi(TStringStatic::getForeground("lightGreen"));
         renderer.setRow(vec![
-            TString::new(String::from("done")),
+            cmDone.clone(),
             TString::new(String::from("Mark a task as done")),
             TString::new(String::from("")),
         ]);
+        let mut cmUndone = TString::new(String::from("undone"));
+        cmUndone.setAnsi(TStringStatic::getForeground("lightGreen"));
         renderer.setRow(vec![
-            TString::new(String::from("undone")),
+            cmUndone.clone(),
             TString::new(String::from("Mark a task as undone")),
             TString::new(String::from("")),
         ]);
+        let mut cmConfig = TString::new(String::from("config"));
+        cmConfig.setAnsi(TStringStatic::getForeground("lightGreen"));
         renderer.setRow(vec![
-            TString::new(String::from("config")),
+            cmConfig.clone(),
             TString::new(String::from("Show a property")),
             TString::new(String::from("")),
         ]);
+        let mut cmSet = TString::new(String::from("set"));
+        cmSet.setAnsi(TStringStatic::getForeground("lightGreen"));
         renderer.setRow(vec![
-            TString::new(String::from("set")),
+            cmSet.clone(),
             TString::new(String::from("Set a property")),
             TString::new(String::from("")),
         ]);
+        let mut cmUnset = TString::new(String::from("unset"));
+        cmUnset.setAnsi(TStringStatic::getForeground("lightGreen"));
         renderer.setRow(vec![
-            TString::new(String::from("unset")),
+            cmUnset.clone(),
             TString::new(String::from("Unset a property")),
             TString::new(String::from("rem")),
         ]);
+        let mut cmHelp = TString::new(String::from("help"));
+        cmHelp.setAnsi(TStringStatic::getForeground("lightGreen"));
         renderer.setRow(vec![
-            TString::new(String::from("help")),
+            cmHelp.clone(),
             TString::new(String::from("Show this help")),
             TString::new(String::from("?")),
         ]);
-
+        let mut cmVersion = TString::new(String::from("version"));
+        cmVersion.setAnsi(TStringStatic::getForeground("lightGreen"));
         renderer.setRow(vec![
-            TString::new(String::from("version")),
+            cmVersion.clone(),
             TString::new(String::from("Show version")),
             TString::new(String::from("v")),
         ]);
 
+        let mut cmMd = TString::new(String::from("md"));
+        cmMd.setAnsi(TStringStatic::getForeground("lightGreen"));
         renderer.setRow(vec![
-            TString::new(String::from("md")),
+            cmMd.clone(),
             TString::new(String::from("Save markdown file")),
             TString::new(String::from("")),
         ]);
 
+        let mut cmHtml = TString::new(String::from("html"));
+        cmHtml.setAnsi(TStringStatic::getForeground("lightGreen"));
         renderer.setRow(vec![
-            TString::new(String::from("html")),
+            cmHtml.clone(),
             TString::new(String::from("Save html file")),
             TString::new(String::from("")),
         ]);
@@ -592,14 +640,18 @@ impl Todo {
     }
 
     pub fn showVersion(&mut self) -> &mut Self {
-        let mut renderer = &mut self.renderer;
-        let mut c1 = TString::new(String::from(""));
-        let mut c2 = TString::new(String::from(""));
+        let renderer = &mut self.renderer;
+        let c1 = TString::new(String::from(""));
+        let c2 = TString::new(String::from(""));
+        let settings = &self.settings;
+        let mut name = settings.get(String::from("app-name")).unwrap().to_string();
+        name.push_str(":");
+        let version = settings
+            .get(String::from("app-version"))
+            .unwrap()
+            .to_string();
         renderer.setHeader(vec![c1.clone(), c2.clone()]);
-        renderer.setRow(vec![
-            TString::new(String::from("ToDo:")),
-            TString::new(String::from(env!("CARGO_PKG_VERSION"))),
-        ]);
+        renderer.setRow(vec![TString::new(name), TString::new(version)]);
         renderer.adaptColumnLengths().render();
         self
     }
@@ -687,6 +739,7 @@ impl Todo {
             "log" => self.show(),
             "list" => self.show(),
             "show" => self.show(),
+            "init" => self.show(),
             "ls" => self.show(),
             "add" => self
                 .addTask(scannerRef.param.clone().as_str())

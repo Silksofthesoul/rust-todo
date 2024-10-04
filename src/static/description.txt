@@ -1,0 +1,16 @@
+%APP-NAME%: %APP-VER%
+
+This program allows you to make a todo list. You can also mark completed tasks,
+as well as export your lists to .md and .html formats.
+
+At the moment the program exists only in the version for windows.
+This program is being developed as part of my study of programming in the Rust language.
+
+To use the program everywhere and without specifying the extension,
+add the path to the program to the environment variable "path".
+
+You can also customize the display of columns in your list using the `todo set excludedColumns "Created,Ended"` command,
+where you can list the names of the columns that you do not need to show, separated by commas.
+
+If you have any questions or suggestions on using this program,
+create an issue or discussion on GitHub: https://github.com/Silksofthesoul/rust-todo

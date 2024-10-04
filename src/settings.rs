@@ -17,8 +17,20 @@ impl Settings {
         settings.insert(String::from("fileNameDB"), String::from("todo.json"));
         settings.insert(String::from("mdFile"), String::from("todo.md"));
         settings.insert(String::from("htmlFile"), String::from("todo.html"));
+        settings.insert(String::from("app-name"), String::from("ToDo"));
+        settings.insert(
+            String::from("app-version"),
+            String::from(env!("CARGO_PKG_VERSION")),
+        );
 
         let mut templates: HashMap<String, String> = HashMap::new();
+
+        let txtDescription = PROJECT_DIR
+            .get_file("description.txt")
+            .unwrap()
+            .contents_utf8()
+            .unwrap();
+        settings.insert(String::from("description"), String::from(txtDescription));
 
         let jsonTemplate = PROJECT_DIR
             .get_file("todo.template.json")
