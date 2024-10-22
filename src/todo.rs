@@ -733,6 +733,21 @@ impl Todo {
         self
     }
 
+    fn winInstall(&mut self) -> &mut Self {
+        let settings = &self.settings;
+        let installDir: String = settings
+            .get(String::from("windows-user-location"))
+            .unwrap()
+            .to_string();
+        println!("installDir: {}", installDir);
+        self
+    }
+
+    pub fn install(&mut self) -> &mut Self {
+        self.winInstall();
+        self
+    }
+
     pub fn run(&mut self) -> &mut Self {
         let scannerRef = &self.scanner;
         match scannerRef.command.as_str() {
@@ -741,6 +756,7 @@ impl Todo {
             "show" => self.show(),
             "init" => self.show(),
             "ls" => self.show(),
+            "install" => self.install(),
             "add" => self
                 .addTask(scannerRef.param.clone().as_str())
                 .sync()
