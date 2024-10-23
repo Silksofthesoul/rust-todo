@@ -2,6 +2,8 @@
 
 use chrono::{DateTime, Local};
 use std::collections::HashMap;
+use std::fs;
+use std::process::Command;
 
 use crate::fileWorker::FileWorker;
 use crate::library::json::{parse, stringify};
@@ -735,16 +737,52 @@ impl Todo {
 
     fn winInstall(&mut self) -> &mut Self {
         let settings = &self.settings;
-        let installDir: String = settings
-            .get(String::from("windows-user-location"))
+        let appFullPath: String = settings
+            .get(String::from("appFullPath"))
             .unwrap()
             .to_string();
-        println!("installDir: {}", installDir);
+        let execPath: String = settings.get(String::from("execPath")).unwrap().to_string();
+        match fs::copy(&execPath, &appFullPath) {
+            Ok(bytes_copied) => {
+                println!("Успешно скопировано {} байт.", bytes_copied);
+                let output = Command::new(appFullPath.clone())
+                    .arg("installFinish")
+                    .arg(execPath.clone())
+                    .output()
+                    .expect("Не удалось выполнить команду");
+
+                // Проверяем статус выполнения
+                if output.status.success() {
+                    let stdout = String::from_utf8_lossy(&output.stdout);
+                    println!("Вывод: {}", stdout);
+                } else {
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    eprintln!("Ошибка: {}", stderr);
+                }
+            }
+            Err(e) => eprintln!("Ошибка при копировании файла: {}", e),
+        }
         self
     }
 
     pub fn install(&mut self) -> &mut Self {
-        self.winInstall();
+        let settings = &self.settings;
+        let platform = settings.get(String::from("platform")).unwrap().to_string();
+        println!("platform: {}", platform.clone());
+        if platform.clone() == "windows" {
+            self.winInstall();
+        }
+        self
+    }
+
+    pub fn installFinish(&mut self, params: Vec<String>) -> &mut Self {
+        let installFile: String = params[0].clone();
+        println!("installFile: {}", installFile);
+        println!("Попытка удаления файла...");
+        match fs::remove_file(installFile) {
+            Ok(_) => println!("Файл успешно удалён."),
+            Err(e) => eprintln!("Ошибка при удалении файла: {}", e),
+        }
         self
     }
 
@@ -757,6 +795,7 @@ impl Todo {
             "init" => self.show(),
             "ls" => self.show(),
             "install" => self.install(),
+            "installFinish" => self.installFinish(scannerRef.params.clone()),
             "add" => self
                 .addTask(scannerRef.param.clone().as_str())
                 .sync()

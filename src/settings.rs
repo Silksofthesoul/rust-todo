@@ -3,10 +3,11 @@ use directories::UserDirs;
 use include_dir::{include_dir, Dir};
 use std::env;
 use std::path::Path;
+use std::path::PathBuf;
 
 use std::collections::HashMap;
 
-fn print_type_of<T>(_: &T) {
+fn printTypeOf<T>(_: &T) {
     println!("{}", std::any::type_name::<T>());
 }
 
@@ -19,30 +20,49 @@ pub struct Settings {
 impl Settings {
     pub fn new() -> Settings {
         static PROJECT_DIR: Dir = include_dir!("src/static");
-        let mut homeDir: &Path = Path::new("");
+
+        // home directory path and file name
+        let appFileName: String = String::from("todo.exe");
+        let mut strAppDir: String = String::new();
+        let mut strAppFullPath: String = String::new();
         if let Some(user_dirs) = UserDirs::new() {
-            homeDir = user_dirs.home_dir().;
+            let mut homeDir = user_dirs.home_dir().to_path_buf();
+            homeDir.push(".bin");
+            strAppDir = homeDir.to_string_lossy().into_owned();
+            homeDir.push(&appFileName);
+            strAppFullPath = homeDir.to_string_lossy().into_owned();
         }
-        println!("homeDir   {:?}", homeDir);
-        // let mut appDir: PathBuf = match env::home_dir() {
-        //     Some(path) => path,
-        //     None => PathBuf::from("/"),
-        // };
-        //
-        // appDir.push(".bin");
-        // let appDirOSString = appDir.into_os_string();
-        // println!("userDirs  {:?}", userDirs);
-        // println!("homeDir   {:?}", homeDir);
-        // let appDirString = appDirOSString.to_str().unwrap();
+
+        // the platform
+        let platform = if cfg!(target_os = "windows") {
+            "windows"
+        } else if cfg!(target_os = "macos") {
+            "macos"
+        } else if cfg!(target_os = "linux") {
+            "linux"
+        } else {
+            "unknown"
+        };
+
+        //current exec
+        let mut execPath: String = String::new();
+        match env::current_exe() {
+            Ok(exe_path) => execPath = exe_path.display().to_string(),
+            Err(e) => execPath = String::from("%unknown%"),
+        }
 
         let mut settings: HashMap<String, String> = HashMap::new();
         settings.insert(String::from("fileNameDB"), String::from("todo.json"));
         settings.insert(String::from("mdFile"), String::from("todo.md"));
         settings.insert(String::from("htmlFile"), String::from("todo.html"));
         settings.insert(String::from("app-name"), String::from("ToDo"));
+        settings.insert(String::from("platform"), String::from(platform));
+        settings.insert(String::from("appFileName"), String::from(appFileName));
+        settings.insert(String::from("appFullPath"), String::from(strAppFullPath));
+        settings.insert(String::from("execPath"), String::from(execPath));
         settings.insert(
             String::from("appDir"),
-            String::from(String::from("appDirString")),
+            String::from(String::from(strAppDir)),
         );
         settings.insert(
             String::from("app-version"),
