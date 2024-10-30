@@ -8,10 +8,11 @@ pub struct FileWorker {
     errorFile: String,
     errorFile404: String,
     msgCreateNewFile: String,
+    isInitNewFile: bool,
 }
 
 impl FileWorker {
-    pub fn new() -> FileWorker {
+    pub fn new(isInitNewFile: bool) -> FileWorker {
         let errorFile = String::from("Ошибка, чтения файла.");
         let errorFile404 = String::from("Файл не найден");
         let msgCreateNewFile = String::from("Создаем новый файл");
@@ -20,7 +21,17 @@ impl FileWorker {
             errorFile,
             errorFile404,
             msgCreateNewFile,
+            isInitNewFile,
         }
+    }
+
+    pub fn allowNewFile(&mut self) -> &Self {
+        self.isInitNewFile = true;
+        self
+    }
+    pub fn disallowNewFile(&mut self) -> &mut Self {
+        self.isInitNewFile = false;
+        self
     }
 
     pub fn fileToString(&self, path: String, template: String) -> Result<String, Box<dyn Error>> {
@@ -38,12 +49,16 @@ impl FileWorker {
             }
             Err(err) => {
                 if err.kind() == io::ErrorKind::NotFound {
-                    println!("{}", commonError);
-                    println!("{}", notFoundError);
-                    println!("{}", createMsg);
-                    let mut file = fs::File::create(path)?;
-                    value = String::from(template);
-                    file.write_all(value.as_bytes())?;
+                    if self.isInitNewFile {
+                        println!("{}", commonError);
+                        println!("{}", notFoundError);
+                        println!("{}", createMsg);
+                        let mut file = fs::File::create(path)?;
+                        value = String::from(template);
+                        file.write_all(value.as_bytes())?;
+                    } else {
+                        value = String::from(template);
+                    }
                 }
             }
         }

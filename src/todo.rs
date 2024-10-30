@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::process::Command;
 
-use crate::fileWorker::FileWorker;
+use crate::fileWorker::{self, FileWorker};
 use crate::library::json::{parse, stringify};
 use crate::markdownrender::markdownrender::MarkdownRender;
 use crate::scanner::Scanner;
@@ -16,6 +16,8 @@ use crate::tstring::tstring::{TString, TString as TStringStatic};
 use serde::{Deserialize, Serialize};
 use serde_json;
 use serde_json::Result;
+
+use self_replace;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TodoItem {
@@ -58,7 +60,7 @@ impl Todo {
         let renderer = TTR::new();
         let scanner = Scanner::new();
         let settings = Settings::new();
-        let fileWorker = FileWorker::new();
+        let fileWorker = FileWorker::new(false);
         let fileNameDB: String = settings
             .get(String::from("fileNameDB"))
             .unwrap()
@@ -89,6 +91,27 @@ impl Todo {
             todoMode: 0,
             todoIndexes: vec![-1],
         }
+    }
+
+    pub fn init(&mut self) -> &mut Self {
+        let fileWorker = &self.fileWorker.allowNewFile();
+        let settings = &self.settings;
+        let fileNameDB: String = settings
+            .get(String::from("fileNameDB"))
+            .unwrap()
+            .to_string();
+        let tmplEmpty: String = settings
+            .template(String::from("emptyDB"))
+            .unwrap()
+            .to_string();
+        let now: DateTime<Local> = Local::now();
+        let nowStr = now.format("%Y-%m-%d %H:%M:%S").to_string();
+        let mut tmpl = tmplEmpty.clone();
+        tmpl = tmpl.replace("%now%", nowStr.as_str());
+
+        let _ = fileWorker.fileToString(fileNameDB.clone(), tmpl.clone());
+
+        self
     }
 
     pub fn resetTodoMode(&mut self) -> &mut Self {
@@ -540,8 +563,8 @@ impl Todo {
         cmInit.setAnsi(TStringStatic::getForeground("lightGreen"));
         renderer.setRow(vec![
             cmInit.clone(),
-            TString::new(String::from("Init your todo, or show all tasks")),
-            TString::new(String::from("log, show, list, ls")),
+            TString::new(String::from("Init your todo")),
+            TString::new(String::from("")),
         ]);
         let mut cmLs = TString::new(String::from("ls"));
         cmLs.setAnsi(TStringStatic::getForeground("lightGreen"));
@@ -759,6 +782,10 @@ impl Todo {
                     let stderr = String::from_utf8_lossy(&output.stderr);
                     eprintln!("Ошибка: {}", stderr);
                 }
+
+                if let Err(e) = self_replace::self_delete() {
+                    eprintln!("Ошибка при удалении оригинального файла: {}", e);
+                }
             }
             Err(e) => eprintln!("Ошибка при копировании файла: {}", e),
         }
@@ -775,14 +802,9 @@ impl Todo {
         self
     }
 
-    pub fn installFinish(&mut self, params: Vec<String>) -> &mut Self {
-        let installFile: String = params[0].clone();
-        println!("installFile: {}", installFile);
-        println!("Попытка удаления файла...");
-        match fs::remove_file(installFile) {
-            Ok(_) => println!("Файл успешно удалён."),
-            Err(e) => eprintln!("Ошибка при удалении файла: {}", e),
-        }
+    pub fn installFinish(&mut self) -> &mut Self {
+        println!("Копия файла должна быть удалена после установки.");
+        println!("Перезапустите консоль, для справки наберите: todo help");
         self
     }
 
@@ -792,10 +814,10 @@ impl Todo {
             "log" => self.show(),
             "list" => self.show(),
             "show" => self.show(),
-            "init" => self.show(),
+            "init" => self.init(),
             "ls" => self.show(),
             "install" => self.install(),
-            "installFinish" => self.installFinish(scannerRef.params.clone()),
+            "installFinish" => self.installFinish(),
             "add" => self
                 .addTask(scannerRef.param.clone().as_str())
                 .sync()
