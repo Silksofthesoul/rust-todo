@@ -3,6 +3,7 @@
 use chrono::{DateTime, Local};
 use std::collections::HashMap;
 use std::fs;
+use std::io;
 use std::process::Command;
 
 use crate::fileWorker::{self, FileWorker};
@@ -18,6 +19,8 @@ use serde_json;
 use serde_json::Result;
 
 use self_replace;
+use winreg::enums::*;
+use winreg::RegKey;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TodoItem {
@@ -757,8 +760,7 @@ impl Todo {
         println!("\n\n");
         self
     }
-
-    fn winInstall(&mut self) -> &mut Self {
+    fn winInstallFileCopy(&mut self) -> &mut Self {
         let settings = &self.settings;
         let appFullPath: String = settings
             .get(String::from("appFullPath"))
@@ -788,6 +790,31 @@ impl Todo {
                 }
             }
             Err(e) => eprintln!("Ошибка при копировании файла: {}", e),
+        }
+        self
+    }
+
+    fn winInstallRegistry(&mut self) -> Result<&mut Self, io::Error> {
+        let settings = &self.settings;
+        let appFullPath: String = settings
+            .get(String::from("appFullPath"))
+            .unwrap()
+            .to_string();
+        let mut currentPath: String = String::from(";");
+        {
+            let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+            let envKey = hkcu.open_subkey_with_flags("Environment", KEY_ALL_ACCESS)?;
+            currentPath = envKey.get_value("PATH")?;
+        }
+        println!("current_path: {:?}", currentPath);
+        Ok(self)
+    }
+
+    fn winInstall(&mut self) -> &mut Self {
+        self.winInstallFileCopy();
+        match self.winInstallRegistry() {
+            Ok(_) => println!("Успешно обновлено!"),
+            Err(e) => eprintln!("Ошибка: {}", e),
         }
         self
     }
