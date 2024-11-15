@@ -1,10 +1,16 @@
 #![allow(non_snake_case)]
 
-use chrono::{DateTime, Local};
+// std
+
 use std::collections::HashMap;
+use std::env;
+use std::ffi::OsString;
 use std::fs;
 use std::io;
+use std::path::PathBuf;
 use std::process::Command;
+
+// crates
 
 use crate::fileWorker::{self, FileWorker};
 use crate::library::json::{parse, stringify};
@@ -14,11 +20,16 @@ use crate::settings::Settings;
 use crate::terminaltablerenderer::terminaltablerenderer::TerminalTableRenderer as TTR;
 use crate::tstring::tstring::{TString, TString as TStringStatic};
 
+
+// dependencies
 use serde::{Deserialize, Serialize};
 use serde_json;
 use serde_json::Result;
 
 use self_replace;
+
+use chrono::{DateTime, Local};
+
 use winreg::enums::*;
 use winreg::RegKey;
 
@@ -794,28 +805,44 @@ impl Todo {
         self
     }
 
-    fn winInstallRegistry(&mut self) -> Result<&mut Self, io::Error> {
+    fn winInstallRegistry(&mut self) -> &mut Self {
         let settings = &self.settings;
         let appFullPath: String = settings
             .get(String::from("appFullPath"))
             .unwrap()
             .to_string();
-        let mut currentPath: String = String::from(";");
-        {
-            let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-            let envKey = hkcu.open_subkey_with_flags("Environment", KEY_ALL_ACCESS)?;
-            currentPath = envKey.get_value("PATH")?;
+        let appDir: String = settings
+            .get(String::from("appDir"))
+            .unwrap()
+            .to_string();
+        let mut appDirMod = appDir.clone();
+        appDirMod.push_str("\\");
+
+        println!("appDir: {}", appDirMod);
+
+        let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+        let env_key = hkcu.open_subkey_with_flags("Environment", KEY_ALL_ACCESS)
+            .expect("Не удалось открыть ключ реестра");
+
+        let current_path: OsString = env_key.get_value("PATH").unwrap_or_else(|_| OsString::from(""));
+
+        let mut paths: Vec<PathBuf> = std::env::split_paths(&current_path).collect();
+
+        if !paths.iter().any(|p| *p == PathBuf::from(&appDirMod)) {
+            paths.push(PathBuf::from(&appDirMod));
+            let new_path_string = std::env::join_paths(paths).expect("Ошибка при объединении путей");
+            env_key.set_value("PATH", &new_path_string).expect("Не удалось установить новое значение PATH");
+            println!("Новый путь добавлен: {}", &appDirMod);
+        } else {
+            println!("Путь уже существует: {}", &appDirMod);
         }
-        println!("current_path: {:?}", currentPath);
-        Ok(self)
+        println!("Установка завершена", &appDirMod );
+        self
     }
 
     fn winInstall(&mut self) -> &mut Self {
         self.winInstallFileCopy();
-        match self.winInstallRegistry() {
-            Ok(_) => println!("Успешно обновлено!"),
-            Err(e) => eprintln!("Ошибка: {}", e),
-        }
+        self.winInstallRegistry();
         self
     }
 
