@@ -836,7 +836,7 @@ impl Todo {
         } else {
             println!("Путь уже существует: {}", &appDirMod);
         }
-        println!("Установка завершена", &appDirMod );
+        println!("Установка завершена" );
         self
     }
 
