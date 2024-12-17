@@ -12,5 +12,7 @@ add the path to the program to the environment variable "path".
 You can also customize the display of columns in your list using the `todo set excludedColumns "Created,Ended"` command,
 where you can list the names of the columns that you do not need to show, separated by commas.
 
+To install the program, to work without specifying the path, place the file todo.exe somewhere, for example, in "c:\bin\", you should also write this path in the environment variables. After that, you will be able to execute commands without specifying the full path.
+
 If you have any questions or suggestions on using this program,
 create an issue or discussion on GitHub: https://github.com/Silksofthesoul/rust-todo
