@@ -16,7 +16,7 @@ This is a simple ToDo cli app written in Rust.
 
 ## Usage
 
-Download latest release from [releases](https://github.com/rust-cli/todo/releases) page.
+Download latest release from [releases](https://github.com/Silksofthesoul/rust-todo/releases) page.
 
 To install the program, to work without specifying the path, place the file todo.exe somewhere, for example, in "c:\bin\", you should also write this path in the environment variable %PATH%. After that, you will be able to execute commands without specifying the full path.
 
