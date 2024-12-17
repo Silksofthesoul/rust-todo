@@ -26,12 +26,7 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 use serde_json::Result;
 
-use self_replace;
-
 use chrono::{DateTime, Local};
-
-use winreg::enums::*;
-use winreg::RegKey;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TodoItem {
