@@ -592,35 +592,28 @@ impl Todo {
         renderer.setRow(vec![
             cmAdd.clone(),
             TString::new(String::from("Add a task")),
-            TString::new(String::from("")),
+            TString::new(String::from("+, push")),
         ]);
         let mut cmRm = TString::new(String::from("rm"));
         cmRm.setAnsi(TStringStatic::getForeground("lightGreen"));
         renderer.setRow(vec![
             cmRm.clone(),
             TString::new(String::from("Delete a task")),
-            TString::new(String::from("delete, del")),
-        ]);
-        let mut cmPush = TString::new(String::from("push"));
-        cmPush.setAnsi(TStringStatic::getForeground("lightGreen"));
-        renderer.setRow(vec![
-            cmPush.clone(),
-            TString::new(String::from("Add a task")),
-            TString::new(String::from("")),
+            TString::new(String::from("-, delete, del")),
         ]);
         let mut cmDone = TString::new(String::from("done"));
         cmDone.setAnsi(TStringStatic::getForeground("lightGreen"));
         renderer.setRow(vec![
             cmDone.clone(),
             TString::new(String::from("Mark a task as done")),
-            TString::new(String::from("")),
+            TString::new(String::from("x")),
         ]);
         let mut cmUndone = TString::new(String::from("undone"));
         cmUndone.setAnsi(TStringStatic::getForeground("lightGreen"));
         renderer.setRow(vec![
             cmUndone.clone(),
             TString::new(String::from("Mark a task as undone")),
-            TString::new(String::from("")),
+            TString::new(String::from("u")),
         ]);
         let mut cmConfig = TString::new(String::from("config"));
         cmConfig.setAnsi(TStringStatic::getForeground("lightGreen"));
@@ -717,7 +710,8 @@ impl Todo {
         let markdownString: String = self.getMd(false);
         let settings = &self.settings;
         let mdFile: String = settings.get(String::from("mdFile")).unwrap().to_string();
-        self.fileWorker.write(mdFile, markdownString).unwrap();
+        self.fileWorker.write(mdFile.clone(), markdownString).unwrap();
+        println!("File \"{}\" is saved", mdFile.clone());
         self
     }
 
@@ -737,7 +731,8 @@ impl Todo {
         let mut htmlRes = htmlTemplate.replace("%title%", title.as_str());
         htmlRes = htmlRes.replace("%content%", htmlString.as_str());
         htmlRes = htmlRes.replace("%style%", cssStyles.as_str());
-        self.fileWorker.write(htmlFile, htmlRes).unwrap();
+        self.fileWorker.write(htmlFile.clone(), htmlRes).unwrap();
+        println!("File \"{}\" is saved", htmlFile.clone());
         self
     }
 
@@ -784,15 +779,22 @@ impl Todo {
                 .addTask(scannerRef.param.clone().as_str())
                 .sync()
                 .show(),
+            "+" => self
+                .addTask(scannerRef.param.clone().as_str())
+                .sync()
+                .show(),
             "rm" => self.rmTaskByIndex(scannerRef.params.clone()).sync().show(),
             "delete" => self.rmTaskByIndex(scannerRef.params.clone()).sync().show(),
             "del" => self.rmTaskByIndex(scannerRef.params.clone()).sync().show(),
+            "-" => self.rmTaskByIndex(scannerRef.params.clone()).sync().show(),
             "push" => self
                 .addTask(scannerRef.param.clone().as_str())
                 .sync()
                 .show(),
             "done" => self.done(scannerRef.params.clone()).sync().show(),
+            "x" => self.done(scannerRef.params.clone()).sync().show(),
             "undone" => self.undone(scannerRef.params.clone()).sync().show(),
+            "u" => self.undone(scannerRef.params.clone()).sync().show(),
             "config" => {
                 self.showProperty(scannerRef.param.clone().to_string());
                 self
