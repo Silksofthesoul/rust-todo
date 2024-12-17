@@ -24,22 +24,17 @@ To install the program, to work without specifying the path, place the file todo
 
 
 - `init` Init your todo
-- `ls` Show all tasks
-- `log, show, list, init` Show all tasks
-- `add` Add a task
-- `rm` Delete a task
-- `delete, del` Delete a task
-- `push` Add a task
-- `done` Mark a task as done
-- `undone` Mark a task as undone
+- `ls, log, show, list, init` Show all tasks (or run without parameters)
+- `add, +, push` Add a task
+- `rm, -, delete, del` Delete a task
+- `done, x` Mark a task as done
+- `undone, u` Mark a task as undone
 - `config` Show a property
 - `set` Set a property
 - `unset` Unset a property
 - `rem` Unset a property
-- `help` Show this help
-- `?` Show this help
-- `version` Show version
-- `v` Show version
+- `help, ?` Show this help
+- `version, v` Show version
 - `md` Save markdown file
 - `html` Save html file
 
