@@ -771,96 +771,6 @@ impl Todo {
         println!("\n\n");
         self
     }
-    fn winInstallFileCopy(&mut self) -> &mut Self {
-        let settings = &self.settings;
-        let appFullPath: String = settings
-            .get(String::from("appFullPath"))
-            .unwrap()
-            .to_string();
-        let execPath: String = settings.get(String::from("execPath")).unwrap().to_string();
-        match fs::copy(&execPath, &appFullPath) {
-            Ok(bytes_copied) => {
-                println!("Успешно скопировано {} байт.", bytes_copied);
-                let output = Command::new(appFullPath.clone())
-                    .arg("installFinish")
-                    .arg(execPath.clone())
-                    .output()
-                    .expect("Не удалось выполнить команду");
-
-                // Проверяем статус выполнения
-                if output.status.success() {
-                    let stdout = String::from_utf8_lossy(&output.stdout);
-                    println!("Вывод: {}", stdout);
-                } else {
-                    let stderr = String::from_utf8_lossy(&output.stderr);
-                    eprintln!("Ошибка: {}", stderr);
-                }
-
-                if let Err(e) = self_replace::self_delete() {
-                    eprintln!("Ошибка при удалении оригинального файла: {}", e);
-                }
-            }
-            Err(e) => eprintln!("Ошибка при копировании файла: {}", e),
-        }
-        self
-    }
-
-    fn winInstallRegistry(&mut self) -> &mut Self {
-        let settings = &self.settings;
-        let appFullPath: String = settings
-            .get(String::from("appFullPath"))
-            .unwrap()
-            .to_string();
-        let appDir: String = settings
-            .get(String::from("appDir"))
-            .unwrap()
-            .to_string();
-        let mut appDirMod = appDir.clone();
-        appDirMod.push_str("\\");
-
-        println!("appDir: {}", appDirMod);
-
-        let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-        let env_key = hkcu.open_subkey_with_flags("Environment", KEY_ALL_ACCESS)
-            .expect("Не удалось открыть ключ реестра");
-
-        let current_path: OsString = env_key.get_value("PATH").unwrap_or_else(|_| OsString::from(""));
-
-        let mut paths: Vec<PathBuf> = std::env::split_paths(&current_path).collect();
-
-        if !paths.iter().any(|p| *p == PathBuf::from(&appDirMod)) {
-            paths.push(PathBuf::from(&appDirMod));
-            let new_path_string = std::env::join_paths(paths).expect("Ошибка при объединении путей");
-            env_key.set_value("PATH", &new_path_string).expect("Не удалось установить новое значение PATH");
-            println!("Новый путь добавлен: {}", &appDirMod);
-        } else {
-            println!("Путь уже существует: {}", &appDirMod);
-        }
-        println!("Установка завершена" );
-        self
-    }
-
-    fn winInstall(&mut self) -> &mut Self {
-        self.winInstallFileCopy();
-        self.winInstallRegistry();
-        self
-    }
-
-    pub fn install(&mut self) -> &mut Self {
-        let settings = &self.settings;
-        let platform = settings.get(String::from("platform")).unwrap().to_string();
-        println!("platform: {}", platform.clone());
-        if platform.clone() == "windows" {
-            self.winInstall();
-        }
-        self
-    }
-
-    pub fn installFinish(&mut self) -> &mut Self {
-        println!("Копия файла должна быть удалена после установки.");
-        println!("Перезапустите консоль, для справки наберите: todo help");
-        self
-    }
 
     pub fn run(&mut self) -> &mut Self {
         let scannerRef = &self.scanner;
@@ -870,8 +780,6 @@ impl Todo {
             "show" => self.show(),
             "init" => self.init(),
             "ls" => self.show(),
-            "install" => self.install(),
-            "installFinish" => self.installFinish(),
             "add" => self
                 .addTask(scannerRef.param.clone().as_str())
                 .sync()
